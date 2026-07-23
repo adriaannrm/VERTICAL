@@ -4,48 +4,65 @@
 
    Para forzar una actualización tras cambiar la app, sube CACHE una versión. */
 
-const CACHE = 'vertical-v1';
+const CACHE = 'vertical-v2';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './icons/icon-180.png',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icon-180.png',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
+/* skipWaiting() se llama suelto, NO devuelto dentro de waitUntil: si se
+   encadena ahí, la activación espera a la instalación y la instalación espera a
+   la activación, y el worker se queda colgado sin llegar a cachear nada.
+
+   Y se cachea fichero a fichero a propósito: con addAll(), si uno solo falla se
+   cae la instalación entera y te quedas sin modo sin conexión. */
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE)
-      .then(c => c.addAll(ASSETS))
-      .then(() => self.skipWaiting())
-  );
+  self.skipWaiting();
+  e.waitUntil((async () => {
+    const c = await caches.open(CACHE);
+    await Promise.all(ASSETS.map(a => c.add(a).catch(() => { })));
+  })());
 });
 
 self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys()
-      .then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+  e.waitUntil((async () => {
+    const viejas = (await caches.keys()).filter(k => k !== CACHE);
+    await Promise.all(viejas.map(k => caches.delete(k)));
+    await self.clients.claim();
+  })());
 });
 
 /* Primero la caché: en el gimnasio no dependemos de la red para nada.
-   En segundo plano refrescamos por si has subido una versión nueva. */
+   En segundo plano refrescamos, por si has subido una versión nueva. */
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
 
-  e.respondWith(
-    caches.match(req).then(hit => {
-      const net = fetch(req).then(res => {
-        if (res && res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(req, copy));
-        }
-        return res;
-      }).catch(() => hit || caches.match('./index.html'));
-      return hit || net;
-    })
-  );
+  e.respondWith((async () => {
+    const guardar = res => {
+      if (res && res.ok) { const copia = res.clone(); caches.open(CACHE).then(c => c.put(req, copia)); }
+      return res;
+    };
+
+    const hit = await caches.match(req);
+    if (hit) {
+      fetch(req).then(guardar).catch(() => { });   // refresco silencioso
+      return hit;
+    }
+    try {
+      return guardar(await fetch(req));
+    } catch (err) {
+      /* Sin red y sin copia. Solo tiene sentido servir la app si lo que se
+         pedía era una página; para una imagen, devolver HTML sería mentir. */
+      if (req.mode === 'navigate') {
+        const app = await caches.match('./index.html');
+        if (app) return app;
+      }
+      throw err;
+    }
+  })());
 });
