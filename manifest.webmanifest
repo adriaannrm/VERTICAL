@@ -1,0 +1,32 @@
+{
+    "description":  "Programa de fuerza para baloncesto",
+    "short_name":  "VERTICAL",
+    "background_color":  "#131110",
+    "icons":  [
+                  {
+                      "purpose":  "any",
+                      "type":  "image/png",
+                      "sizes":  "192x192",
+                      "src":  "icons/icon-192.png"
+                  },
+                  {
+                      "purpose":  "any",
+                      "type":  "image/png",
+                      "sizes":  "512x512",
+                      "src":  "icons/icon-512.png"
+                  },
+                  {
+                      "purpose":  "maskable",
+                      "type":  "image/png",
+                      "sizes":  "512x512",
+                      "src":  "icons/icon-512.png"
+                  }
+              ],
+    "lang":  "es",
+    "orientation":  "portrait",
+    "theme_color":  "#131110",
+    "display":  "standalone",
+    "name":  "VERTICAL",
+    "scope":  "./",
+    "start_url":  "./"
+}

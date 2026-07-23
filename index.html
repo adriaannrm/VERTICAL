@@ -1,0 +1,2029 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>VERTICAL</title>
+<meta name="description" content="Programa de fuerza para baloncesto: rutinas, cargas y progreso.">
+<meta name="theme-color" content="#131110">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VERTICAL">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-512.png">
+<link rel="apple-touch-startup-image" href="icons/splash-dark.png"
+      media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (prefers-color-scheme: dark)">
+<link rel="apple-touch-startup-image" href="icons/splash-light.png"
+      media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)"><style>
+/* ================= VERTICAL =================
+   Oscuro  = pista en sombra (cuero, hierro, cal)
+   Claro   = parqué de arce con las mismas líneas de cal
+   ============================================ */
+
+:root {
+  --court: #F0E3CB;
+  --court-2: #E6D5B6;
+  --panel: #FBF5E9;
+  --panel-2: #FFFDF7;
+  --hair: #D8C4A0;
+  --hair-soft: #E7D8BC;
+  --chalk: #221A0F;
+  --chalk-dim: #6A5940;
+  --chalk-mute: #8E7C61;
+  --leather: #C24717;
+  --leather-soft: #F3DCCE;
+  --rim: #A66E0C;
+  --iron: #6B5D4C;
+  --gear: #C3AA80;
+  --shadow: 0 1px 2px rgba(60, 42, 14, .10), 0 6px 18px rgba(60, 42, 14, .07);
+
+  --f-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --f-num: ui-rounded, "SF Pro Rounded", "Segoe UI Variable Display", -apple-system, system-ui, sans-serif;
+  --f-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+
+  --r: 16px;
+  --gut: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --court: #131110;
+    --court-2: #0C0B0A;
+    --panel: #1D1A17;
+    --panel-2: #262220;
+    --hair: #3A322B;
+    --hair-soft: #2C2622;
+    --chalk: #F5F0E6;
+    --chalk-dim: #A2977F;
+    --chalk-mute: #7E7364;
+    --leather: #EE6A2C;
+    --leather-soft: #3A2418;
+    --rim: #F0A340;
+    --iron: #9A8F7F;
+    --gear: #564B40;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 24px rgba(0, 0, 0, .35);
+  }
+}
+
+:root[data-theme="dark"] {
+  --court: #131110;
+  --court-2: #0C0B0A;
+  --panel: #1D1A17;
+  --panel-2: #262220;
+  --hair: #3A322B;
+  --hair-soft: #2C2622;
+  --chalk: #F5F0E6;
+  --chalk-dim: #A2977F;
+  --chalk-mute: #7E7364;
+  --leather: #EE6A2C;
+  --leather-soft: #3A2418;
+  --rim: #F0A340;
+  --iron: #9A8F7F;
+  --gear: #564B40;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 24px rgba(0, 0, 0, .35);
+}
+
+:root[data-theme="light"] {
+  --court: #F0E3CB;
+  --court-2: #E6D5B6;
+  --panel: #FBF5E9;
+  --panel-2: #FFFDF7;
+  --hair: #D8C4A0;
+  --hair-soft: #E7D8BC;
+  --chalk: #221A0F;
+  --chalk-dim: #6A5940;
+  --chalk-mute: #8E7C61;
+  --leather: #C24717;
+  --leather-soft: #F3DCCE;
+  --rim: #A66E0C;
+  --iron: #6B5D4C;
+  --gear: #C3AA80;
+  --shadow: 0 1px 2px rgba(60, 42, 14, .10), 0 6px 18px rgba(60, 42, 14, .07);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; height: 100%;
+  overscroll-behavior-y: none;
+}
+
+body {
+  background: var(--court);
+  color: var(--chalk);
+  font-family: var(--f-ui);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+button, input, select { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--leather); outline-offset: 2px; border-radius: 6px; }
+
+/* ---------- shell ---------- */
+#app { min-height: 100%; display: flex; flex-direction: column; }
+
+.screen {
+  flex: 1;
+  padding: 0 var(--gut) calc(96px + env(safe-area-inset-bottom));
+  max-width: 720px; width: 100%; margin: 0 auto;
+}
+
+/* Cabecera con la curva del triple */
+.hdr {
+  position: relative;
+  padding: calc(env(safe-area-inset-top) + 18px) 0 14px;
+  overflow: hidden;
+}
+/* Si la marca ya ha reservado el hueco del notch, la cabecera no lo repite. */
+.screen > div:first-child + .hdr { padding-top: 12px; }
+.hdr .arc {
+  position: absolute; inset: auto 0 -46px -10%;
+  width: 120%; height: 120px; pointer-events: none;
+  border-top: 1.5px solid var(--hair);
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  opacity: .8;
+}
+.hdr h1 {
+  margin: 0; font-size: 30px; line-height: 1.1; letter-spacing: -.022em; font-weight: 700;
+  text-wrap: balance;
+}
+.eyebrow {
+  font-family: var(--f-mono); font-size: 11px; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--chalk-mute); margin: 0 0 4px;
+}
+.sub { margin: 6px 0 0; color: var(--chalk-dim); font-size: 14.5px; }
+
+/* ---------- tabs ---------- */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  padding: 8px 6px calc(6px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--court) 88%, transparent);
+  backdrop-filter: saturate(1.6) blur(18px);
+  -webkit-backdrop-filter: saturate(1.6) blur(18px);
+  border-top: 1px solid var(--hair-soft);
+}
+.tabbar button {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 5px 2px; color: var(--chalk-mute); border-radius: 10px;
+  font-family: var(--f-mono); font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase;
+}
+.tabbar button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.tabbar button[aria-current="true"] { color: var(--leather); }
+
+/* ---------- tarjetas ---------- */
+.card {
+  background: var(--panel); border: 1px solid var(--hair-soft);
+  border-radius: var(--r); box-shadow: var(--shadow);
+}
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.stack-lg { display: flex; flex-direction: column; gap: 22px; }
+
+.sect-title {
+  font-family: var(--f-mono); font-size: 11px; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--chalk-mute);
+  margin: 0 0 10px; display: flex; align-items: center; gap: 10px;
+}
+.sect-title::after { content: ""; flex: 1; height: 1px; background: var(--hair-soft); }
+
+/* ---------- HOY: tarjeta de sesión ---------- */
+.today {
+  padding: 18px; display: flex; flex-direction: column; gap: 16px;
+  position: relative; overflow: hidden;
+}
+.today .slot {
+  display: inline-flex; align-items: baseline; gap: 8px;
+  font-family: var(--f-mono); font-size: 11px; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--leather);
+}
+.today h2 { margin: 0; font-size: 27px; letter-spacing: -.02em; line-height: 1.12; }
+.today .meta { display: flex; gap: 18px; color: var(--chalk-dim); font-size: 13.5px; }
+.today .meta b { font-family: var(--f-num); font-size: 17px; color: var(--chalk); font-weight: 600; }
+
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 50px; padding: 0 20px; border-radius: 13px;
+  background: var(--leather); color: #FFF7F1;
+  font-weight: 600; font-size: 16.5px; letter-spacing: -.01em;
+  transition: transform .12s ease, filter .12s ease;
+}
+.btn:active { transform: scale(.985); filter: brightness(.94); }
+.btn-ghost {
+  background: none; color: var(--chalk); border: 1px solid var(--hair);
+  min-height: 46px; font-weight: 500; font-size: 15.5px;
+}
+.btn-sm { min-height: 38px; font-size: 14.5px; padding: 0 14px; border-radius: 10px; }
+.btn[disabled] { opacity: .45; pointer-events: none; }
+
+/* ---------- calendario semanal ---------- */
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.week > div {
+  text-align: center; padding: 9px 2px 10px; border-radius: 10px;
+  background: var(--panel); border: 1px solid var(--hair-soft);
+}
+.week .d { font-family: var(--f-mono); font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--chalk-mute); }
+.week .m { font-family: var(--f-num); font-size: 15px; font-weight: 650; margin-top: 3px; }
+.week .gym { background: var(--leather-soft); border-color: color-mix(in srgb, var(--leather) 32%, transparent); }
+.week .gym .m { color: var(--leather); }
+.week .now { outline: 2px solid var(--chalk); outline-offset: -2px; }
+.week .off .m { color: var(--chalk-mute); font-weight: 500; }
+
+/* ---------- lista de ejercicios ---------- */
+.exrow {
+  display: flex; align-items: center; gap: 13px; padding: 11px 13px;
+  width: 100%; text-align: left; border-radius: 13px;
+  background: var(--panel); border: 1px solid var(--hair-soft);
+}
+.exrow .thumb {
+  flex: 0 0 78px; height: 60px; border-radius: 9px;
+  background: var(--court-2); border: 1px solid var(--hair-soft); overflow: hidden;
+}
+.exrow .thumb canvas { display: block; width: 100%; height: 100%; }
+.exrow .nm { flex: 1; min-width: 0; }
+.exrow .nm strong { display: block; font-size: 15.5px; font-weight: 600; letter-spacing: -.012em; }
+.exrow .nm span { display: block; font-family: var(--f-mono); font-size: 11px; color: var(--chalk-mute); margin-top: 2px; }
+.exrow .prog { font-family: var(--f-num); font-size: 14px; font-weight: 650; color: var(--chalk-mute); }
+.exrow.done { border-color: color-mix(in srgb, var(--leather) 40%, transparent); }
+.exrow.done .prog { color: var(--leather); }
+
+/* ---------- ficha de ejercicio ---------- */
+.stage {
+  height: 236px; border-radius: 14px; overflow: hidden;
+  background: var(--court-2); border: 1px solid var(--hair-soft);
+  position: relative;
+}
+.stage canvas { display: block; width: 100%; height: 100%; }
+.stage .badge {
+  position: absolute; top: 10px; left: 10px;
+  font-family: var(--f-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--chalk-mute); background: color-mix(in srgb, var(--court) 70%, transparent);
+  padding: 4px 8px; border-radius: 7px;
+}
+
+.cues { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
+.cues li { display: flex; gap: 11px; font-size: 14.5px; color: var(--chalk-dim); line-height: 1.42; }
+.cues li b {
+  flex: 0 0 auto; font-family: var(--f-mono); font-size: 11px; color: var(--leather);
+  padding-top: 3px; font-weight: 400;
+}
+.transfer {
+  padding: 13px 15px; border-radius: 12px;
+  background: var(--leather-soft); color: var(--chalk);
+  font-size: 14.5px; line-height: 1.42;
+  border: 1px solid color-mix(in srgb, var(--leather) 24%, transparent);
+}
+
+/* ---------- registro de series ---------- */
+.sets { display: flex; flex-direction: column; gap: 8px; }
+.setrow {
+  display: grid; grid-template-columns: 30px 1fr 1fr 46px; gap: 8px; align-items: center;
+}
+.setrow .n {
+  font-family: var(--f-mono); font-size: 12px; color: var(--chalk-mute); text-align: center;
+}
+.fld { position: relative; }
+.fld input {
+  width: 100%; height: 46px; padding: 14px 8px 2px; text-align: center;
+  background: var(--panel-2); border: 1px solid var(--hair); border-radius: 11px;
+  font-family: var(--f-num); font-size: 19px; font-weight: 650; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.fld input::placeholder { color: var(--chalk-mute); font-weight: 500; }
+.fld label {
+  position: absolute; top: 4px; left: 0; right: 0; text-align: center;
+  font-family: var(--f-mono); font-size: 8.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--chalk-mute); pointer-events: none;
+}
+.tick {
+  height: 46px; border-radius: 11px; border: 1px solid var(--hair);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--chalk-mute); background: var(--panel-2);
+  transition: background .14s ease, color .14s ease, border-color .14s ease;
+}
+.tick svg { width: 19px; height: 19px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.setrow.done .tick { background: var(--leather); border-color: var(--leather); color: #FFF7F1; }
+.setrow.done .fld input { color: var(--chalk); border-color: color-mix(in srgb, var(--leather) 38%, transparent); }
+
+.hint {
+  font-family: var(--f-mono); font-size: 11px; color: var(--chalk-mute);
+  display: flex; justify-content: space-between; gap: 10px;
+}
+.hint b { color: var(--chalk-dim); font-weight: 400; }
+
+/* ---------- descanso ---------- */
+.rest {
+  position: fixed; left: 0; right: 0; bottom: calc(66px + env(safe-area-inset-bottom));
+  z-index: 45; padding: 0 var(--gut);
+  max-width: 720px; margin: 0 auto;
+  transform: translateY(200%); opacity: 0; visibility: hidden;
+  transition: transform .28s cubic-bezier(.32, .72, 0, 1), opacity .2s ease, visibility 0s .28s;
+}
+.rest.on { transform: none; opacity: 1; visibility: visible; transition-delay: 0s; }
+.rest-in {
+  position: relative; overflow: hidden;
+  background: var(--panel-2); border: 1px solid var(--hair);
+  border-radius: 14px; box-shadow: var(--shadow);
+  padding: 12px 15px; display: flex; align-items: center; gap: 14px;
+}
+.rest .fill {
+  position: absolute; inset: 0 auto 0 0; width: 0%;
+  background: var(--leather-soft); transition: width .95s linear;
+}
+.rest .txt { position: relative; flex: 1; }
+.rest .txt .lbl { font-family: var(--f-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--chalk-mute); }
+.rest .txt .t { font-family: var(--f-num); font-size: 26px; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.rest .acts { position: relative; display: flex; gap: 7px; }
+
+/* ---------- progreso ---------- */
+.kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.kpi { padding: 14px 15px; border-radius: 13px; background: var(--panel); border: 1px solid var(--hair-soft); }
+.kpi .k { font-family: var(--f-mono); font-size: 10px; letter-spacing: .11em; text-transform: uppercase; color: var(--chalk-mute); }
+.kpi .v { font-family: var(--f-num); font-size: 27px; font-weight: 700; letter-spacing: -.025em; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.kpi .v small { font-size: 14px; font-weight: 600; color: var(--chalk-mute); margin-left: 2px; }
+.kpi .d { font-family: var(--f-mono); font-size: 10.5px; color: var(--chalk-mute); margin-top: 2px; }
+.kpi .d.up { color: var(--leather); }
+
+.chart { padding: 14px; border-radius: 13px; background: var(--panel); border: 1px solid var(--hair-soft); }
+.chart canvas { display: block; width: 100%; height: 148px; }
+.chart .top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; gap: 10px; }
+.chart .top strong { font-size: 15px; font-weight: 600; letter-spacing: -.012em; }
+.chart .top span { font-family: var(--f-num); font-size: 15px; font-weight: 650; color: var(--leather); }
+
+.pr {
+  display: flex; align-items: center; gap: 10px; padding: 11px 13px;
+  border-radius: 12px; background: var(--panel); border: 1px solid var(--hair-soft);
+}
+.pr .nm { flex: 1; font-size: 14.5px; }
+.pr .val { font-family: var(--f-num); font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.pr .dt { font-family: var(--f-mono); font-size: 10.5px; color: var(--chalk-mute); }
+
+/* ---------- varios ---------- */
+.chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.chip {
+  padding: 7px 13px; border-radius: 999px; border: 1px solid var(--hair);
+  font-size: 13.5px; color: var(--chalk-dim); background: var(--panel);
+}
+.chip[aria-pressed="true"] { background: var(--chalk); color: var(--court); border-color: var(--chalk); }
+
+.empty {
+  text-align: center; padding: 34px 20px; color: var(--chalk-mute);
+  font-size: 14.5px; line-height: 1.5;
+}
+
+.sheet-bg {
+  position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, .45);
+  opacity: 0; pointer-events: none; transition: opacity .24s ease;
+}
+.sheet-bg.on { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 61;
+  background: var(--court); border-radius: 20px 20px 0 0;
+  border-top: 1px solid var(--hair);
+  padding: 8px var(--gut) calc(20px + env(safe-area-inset-bottom));
+  max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  max-width: 720px; margin: 0 auto;
+  transform: translateY(100%); transition: transform .3s cubic-bezier(.32, .72, 0, 1);
+}
+.sheet.on { transform: none; }
+.grab { width: 38px; height: 4px; border-radius: 2px; background: var(--hair); margin: 6px auto 14px; }
+
+.row {
+  display: flex; align-items: center; gap: 12px; padding: 13px 15px;
+  background: var(--panel); border: 1px solid var(--hair-soft); border-radius: 13px;
+}
+.row .lb { flex: 1; font-size: 15px; }
+.row .rb { font-family: var(--f-num); font-size: 15px; font-weight: 600; color: var(--chalk-mute); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+</style>
+</head>
+<body>
+
+<div id="app">
+  <nav class="tabbar" aria-label="Secciones"></nav>
+</div>
+
+<!-- barra de descanso -->
+<div class="rest" id="rest" role="status" aria-live="polite">
+  <div class="rest-in">
+    <span class="fill" id="rest-f"></span>
+    <span class="txt">
+      <span class="lbl">Descanso</span>
+      <span class="t" id="rest-t">0s</span>
+    </span>
+    <span class="acts">
+      <button class="btn btn-ghost btn-sm" id="rest-add">+30s</button>
+      <button class="btn btn-sm" id="rest-skip">Listo</button>
+    </span>
+  </div>
+</div>
+
+<script>
+/* VERTICAL — catálogo de ejercicios y programa
+   Fuente: Programa_Gimnasio_Baloncesto.docx (microciclo de 2 semanas en espejo)
+   log:  'weight' peso×reps · 'bw' peso corporal (+lastre) ×reps
+         'time' segundos · 'height' altura de cajón (cm)×reps · 'steps' pasos/lado */
+
+const EX = {
+  /* ---------- TREN INFERIOR ---------- */
+  sentadilla: {
+    name: 'Sentadilla trasera / frontal',
+    tag: 'Sentadilla', group: 'inferior', log: 'weight', anim: 'squat',
+    transfer: 'Base de fuerza máxima para saltar, defender en posición baja y aguantar contacto.',
+    cues: [
+      'Barra fija sobre el mediopié durante todo el recorrido.',
+      'Rompe con la cadera y la rodilla a la vez, no solo con la cadera.',
+      'Rodillas siguiendo la línea de los pies, sin colapsar hacia dentro.',
+      'Baja hasta que el pliegue de la cadera pase la rodilla, si tu movilidad lo permite.',
+      'Aire dentro y abdomen apretado antes de bajar; suelta arriba.'
+    ]
+  },
+  bulgara: {
+    name: 'Zancada búlgara con mancuernas',
+    tag: 'Búlgara', group: 'inferior', log: 'weight', anim: 'bulgarian', perSide: true,
+    transfer: 'Fuerza unilateral: salidas, cambios de dirección y primer paso.',
+    cues: [
+      'Pie trasero apoyado en el banco, no clavado: el trabajo es de la pierna delantera.',
+      'Separa el pie delantero lo suficiente para que la rodilla no se vaya muy por delante.',
+      'Baja vertical, como un ascensor; el torso apenas se inclina.',
+      'Empuja con todo el pie delantero, sobre todo el talón.',
+      'Misma carga y mismas reps en las dos piernas: empieza por la débil.'
+    ]
+  },
+  rdl: {
+    name: 'Peso muerto rumano',
+    tag: 'RDL', group: 'inferior', log: 'weight', anim: 'rdl',
+    transfer: 'Cadena posterior: rebote, aceleración y protección de rodilla.',
+    cues: [
+      'Es una bisagra de cadera, no una sentadilla: la cadera va hacia atrás.',
+      'Rodillas ligeramente flexionadas y quietas durante la bajada.',
+      'Barra rozando el muslo todo el rato; si se separa, la espalda paga.',
+      'Baja hasta notar el estiramiento del isquio, no más.',
+      'Espalda plana de principio a fin; el pecho no se hunde.'
+    ]
+  },
+  hipthrust: {
+    name: 'Hip thrust con barra',
+    tag: 'Hip thrust', group: 'inferior', log: 'weight', anim: 'hipthrust',
+    transfer: 'Extensión de cadera explosiva: despegue del salto vertical.',
+    cues: [
+      'Borde del banco justo bajo las escápulas.',
+      'Espinillas verticales arriba: ajusta la distancia de los pies.',
+      'Barbilla metida y mirada al frente; evita hiperextender la lumbar.',
+      'Arriba, aprieta el glúteo un segundo y bloquea la cadera.',
+      'Sube rápido, baja controlado.'
+    ]
+  },
+  boxjump: {
+    name: 'Salto al cajón (box jump)',
+    tag: 'Box jump', group: 'inferior', log: 'height', anim: 'boxjump',
+    transfer: 'Conversión de fuerza en potencia: el salto real de juego.',
+    cues: [
+      'Contramovimiento corto y agresivo: no te quedes abajo pensando.',
+      'Los brazos acompañan; el swing vale altura gratis.',
+      'Aterriza suave, con la rodilla flexionada, sin ruido.',
+      'Baja del cajón andando, nunca saltando: ahí es donde se rompen los tendones.',
+      'Si la técnica se cae, se acabó la serie. Aquí calidad > cantidad.'
+    ]
+  },
+  lateral: {
+    name: 'Desplazamiento lateral con mini-band',
+    tag: 'Lateral band', group: 'inferior', log: 'steps', anim: 'lateral',
+    transfer: 'Estabilidad de rodilla y defensa lateral.',
+    cues: [
+      'Goma por encima de los tobillos o bajo las rodillas.',
+      'Posición defensiva: cadera baja, pecho arriba.',
+      'Los pies nunca se juntan del todo: mantén tensión en la goma.',
+      'Paso corto y activo, sin dar saltitos.',
+      'La rodilla del pie de apoyo no se mete hacia dentro.'
+    ]
+  },
+  nordic: {
+    name: 'Nordic curl (excéntrico)',
+    tag: 'Nordic curl', group: 'inferior', log: 'bw', anim: 'nordic',
+    transfer: 'Prevención de lesión de isquiotibiales, la típica del deporte.',
+    cues: [
+      'Tobillos bien anclados y rodillas sobre algo blando.',
+      'Cuerpo en línea recta de rodilla a hombro: la cadera no se dobla.',
+      'Baja lo más lento que puedas; ese frenado es todo el ejercicio.',
+      'Recoge con las manos cuando pierdas el control y empuja para volver.',
+      'Progresas cuando aguantas más grados antes de caer, no con más reps.'
+    ]
+  },
+
+  /* ---------- CORE ---------- */
+  medball_rot: {
+    name: 'Lanzamiento rotacional con balón medicinal',
+    tag: 'Lanzamiento rotacional', group: 'core', log: 'weight', anim: 'medrot', perSide: true,
+    transfer: 'Transmisión de fuerza en el tiro y el pase con giro de tronco.',
+    cues: [
+      'Colócate de lado a la pared, a un par de pasos.',
+      'La secuencia es pie, cadera, tronco, brazo. Nunca al revés.',
+      'Pivota sobre el pie de atrás, deja que el talón gire.',
+      'Suelta el balón lo más rápido posible: buscas velocidad, no peso.',
+      'Recoge el rebote y resetea; cada repetición empieza de cero.'
+    ]
+  },
+  pallof: {
+    name: 'Pallof press',
+    tag: 'Pallof press', group: 'core', log: 'weight', anim: 'pallof', perSide: true,
+    transfer: 'Estabilidad de tronco al recibir contacto lateral.',
+    cues: [
+      'De lado a la polea, con la carga tirando de ti hacia el lado.',
+      'El objetivo es NO girar: es un ejercicio de aguantar.',
+      'Extiende los brazos despacio hasta bloquear los codos.',
+      'Cuanto más lejos de la polea, más difícil.',
+      'Glúteo y abdomen apretados; costillas hacia abajo.'
+    ]
+  },
+  plank_tap: {
+    name: 'Plancha frontal con toque de hombro',
+    tag: 'Plancha + toque', group: 'core', log: 'time', anim: 'planktap',
+    transfer: 'Rigidez de tronco para transmitir fuerza brazo-pierna.',
+    cues: [
+      'Plancha alta: manos bajo los hombros, cuerpo en tabla.',
+      'Pies algo separados: cuanto más juntos, más difícil.',
+      'La cadera no se balancea al levantar la mano. Ese es el ejercicio.',
+      'Toca el hombro contrario y vuelve sin dejarte caer.',
+      'Respira; no aguantes el aire los 40 segundos.'
+    ]
+  },
+  hanging_leg: {
+    name: 'Elevación de piernas colgado',
+    tag: 'Elevación colgado', group: 'core', log: 'bw', anim: 'hanging',
+    transfer: 'Control de cadera para saltos y protección lumbar.',
+    cues: [
+      'Cuélgate con los hombros activos, no descolgados de la barra.',
+      'Sube retrasando la pelvis, no solo levantando la pierna.',
+      'Si te balanceas, has ido demasiado rápido.',
+      'Baja controlado hasta la vertical completa.',
+      'Si aún no llegas con las piernas rectas, hazlo con rodillas dobladas.'
+    ]
+  },
+  cable_chop: {
+    name: 'Rotación de tronco en polea alta-baja',
+    tag: 'Rotación polea', group: 'core', log: 'weight', anim: 'chop', perSide: true,
+    transfer: 'Potencia rotacional para el tiro exterior.',
+    cues: [
+      'Agarre alto, recorrido en diagonal hacia la cadera contraria.',
+      'El giro sale del tronco, los brazos solo acompañan.',
+      'Cadera estable: gira el tronco sobre ella, no arrastres los pies.',
+      'Controla la vuelta; no dejes que la polea te lleve.',
+      'Mismo número de repeticiones a los dos lados.'
+    ]
+  },
+  superman: {
+    name: 'Superman / extensión lumbar',
+    tag: 'Superman', group: 'core', log: 'time', anim: 'superman',
+    transfer: 'Salud lumbar ante impactos y aterrizajes.',
+    cues: [
+      'Boca abajo, brazos estirados al frente.',
+      'Levanta pecho y piernas a la vez, sin tirones.',
+      'Mirada al suelo: el cuello sigue a la espalda.',
+      'Aguanta arriba un segundo y baja despacio.',
+      'Rango corto y controlado; no busques doblarte por la mitad.'
+    ]
+  },
+
+  /* ---------- TREN SUPERIOR ---------- */
+  banca: {
+    name: 'Press banca plano',
+    tag: 'Press banca', group: 'superior', log: 'weight', anim: 'bench',
+    transfer: 'Fuerza de empuje: protección de balón, bloqueos y caídas.',
+    cues: [
+      'Escápulas juntas y metidas hacia abajo, pecho alto.',
+      'Pies bien clavados en el suelo, empujando.',
+      'La barra baja al esternón, no al cuello.',
+      'Codos a unos 45°, no abiertos del todo.',
+      'Con barra libre y series pesadas: usa pinzas o alguien que te ayude.'
+    ]
+  },
+  dominadas: {
+    name: 'Dominadas / jalón al pecho',
+    tag: 'Dominadas', group: 'superior', log: 'bw', anim: 'pullup',
+    transfer: 'Fuerza de tracción: rebote y peleas por el balón.',
+    cues: [
+      'Empieza cada rep desde brazos extendidos, sin rebote.',
+      'Piensa en llevar los codos al bolsillo, no en tirar con el brazo.',
+      'Pecho hacia la barra; barbilla por encima.',
+      'Baja controlado; ahí se gana la fuerza.',
+      'Si te sobran reps, añade lastre en vez de sumar repeticiones.'
+    ]
+  },
+  militar: {
+    name: 'Press militar de pie',
+    tag: 'Press militar', group: 'superior', log: 'weight', anim: 'ohp',
+    transfer: 'Fuerza de hombro para el tiro y el pase por encima de la cabeza.',
+    cues: [
+      'Barra sobre las clavículas, codos ligeramente por delante.',
+      'Glúteo y abdomen apretados: sin arquear la lumbar.',
+      'Mete la cabeza hacia atrás para que la barra suba recta.',
+      'Arriba, la barra queda sobre la mitad del pie, no por delante.',
+      'Si tienes que arquearte para subir, es demasiado peso.'
+    ]
+  },
+  remo: {
+    name: 'Remo horizontal',
+    tag: 'Remo', group: 'superior', log: 'weight', anim: 'row',
+    transfer: 'Postura y equilibrio empuje-tracción, salud de hombro.',
+    cues: [
+      'Pecho arriba y espalda plana; no redondees para llegar más lejos.',
+      'Tira hacia el ombligo, codos pegados al cuerpo.',
+      'Junta las escápulas al final del recorrido.',
+      'Suelta controlado hasta estirar del todo y notar el estiramiento.',
+      'El torso se queda quieto: no remes con la espalda entera.'
+    ]
+  },
+  medball_pass: {
+    name: 'Pase de pecho explosivo con balón medicinal',
+    tag: 'Pase de pecho', group: 'superior', log: 'weight', anim: 'medpass',
+    transfer: 'Potencia específica del pase directo de juego.',
+    cues: [
+      'De frente a la pared, en posición atlética.',
+      'Balón al pecho, codos dentro.',
+      'Empuja con las piernas y suelta el balón lo más rápido que puedas.',
+      'Prioriza la velocidad de salida sobre el peso del balón.',
+      'Resetea entre repeticiones; sin encadenar por inercia.'
+    ]
+  },
+  facepull: {
+    name: 'Face pull en polea',
+    tag: 'Face pull', group: 'superior', log: 'weight', anim: 'facepull',
+    transfer: 'Salud del manguito rotador ante el volumen de lanzamientos.',
+    cues: [
+      'Polea a la altura de la cara o algo por encima.',
+      'Tira de la cuerda hacia la frente separando las manos.',
+      'Codos altos, a la altura de los hombros.',
+      'Termina con las manos rotadas hacia fuera, como un doble bíceps.',
+      'Peso ligero y control total: aquí no se compite.'
+    ]
+  }
+};
+
+/* Los tres días del microciclo. En semana 2 se invierten A y C. */
+const DAYS = {
+  inferior: {
+    title: 'Tren inferior',
+    subtitle: 'Base de fuerza máxima, unilateral y potencia de salto',
+    warmup: 'Movilidad de cadera y tobillo (círculos de cadera, zancada con rotación, sentadilla profunda con apoyo) + skipping y talón-glúteo suaves + 2 series ligeras de sentadilla sin peso.',
+    note: 'Sube el peso cuando completes todas las series en el rango alto de reps con buena técnica.',
+    items: [
+      { ex: 'sentadilla', sets: 4, reps: '5-6', rest: 150 },
+      { ex: 'bulgara', sets: 3, reps: '6-8/pierna', rest: 90 },
+      { ex: 'rdl', sets: 3, reps: '6-8', rest: 120 },
+      { ex: 'hipthrust', sets: 3, reps: '8-10', rest: 90 },
+      { ex: 'boxjump', sets: 4, reps: '3-4', rest: 120 },
+      { ex: 'lateral', sets: 3, reps: '10 pasos/lado', rest: 60 },
+      { ex: 'nordic', sets: 3, reps: '4-6', rest: 90 }
+    ]
+  },
+  core: {
+    title: 'Core',
+    subtitle: 'Fuerza rotacional y anti-rotación del gesto de tiro y pase',
+    warmup: 'Movilidad torácica (rotaciones de tronco a cuatro apoyos, gato-camello) + respiración diafragmática + 1 serie ligera de cada ejercicio.',
+    note: 'Prioriza la calidad del giro de tronco sobre la velocidad; controla el rango de movimiento.',
+    items: [
+      { ex: 'medball_rot', sets: 4, reps: '6/lado', rest: 60 },
+      { ex: 'pallof', sets: 3, reps: '10/lado', rest: 45 },
+      { ex: 'plank_tap', sets: 3, reps: '30-40 s', rest: 45 },
+      { ex: 'hanging_leg', sets: 3, reps: '8-10', rest: 60 },
+      { ex: 'cable_chop', sets: 3, reps: '10/lado', rest: 45 },
+      { ex: 'superman', sets: 3, reps: '10-12', rest: 45 }
+    ]
+  },
+  superior: {
+    title: 'Tren superior',
+    subtitle: 'Empuje, tracción y potencia de pase',
+    warmup: 'Movilidad de hombro (círculos con palo o goma, dislocaciones de hombro, rotación externa con banda) + 2 series ligeras de flexiones.',
+    note: 'En el pase de pecho explosivo, prioriza la velocidad de salida del balón sobre el peso.',
+    items: [
+      { ex: 'banca', sets: 4, reps: '5-6', rest: 150 },
+      { ex: 'dominadas', sets: 4, reps: '6-8', rest: 120 },
+      { ex: 'militar', sets: 3, reps: '6-8', rest: 90 },
+      { ex: 'remo', sets: 3, reps: '8-10', rest: 90 },
+      { ex: 'medball_pass', sets: 4, reps: '6-8', rest: 60 },
+      { ex: 'facepull', sets: 3, reps: '12-15', rest: 45 }
+    ]
+  }
+};
+
+/* Microciclo en espejo: 6 sesiones de gimnasio, martes/jueves/sábado. */
+const CYCLE = [
+  { week: 1, slot: 'A', day: 2, kind: 'inferior' },
+  { week: 1, slot: 'B', day: 4, kind: 'core' },
+  { week: 1, slot: 'C', day: 6, kind: 'superior' },
+  { week: 2, slot: 'A', day: 2, kind: 'superior' },
+  { week: 2, slot: 'B', day: 4, kind: 'core' },
+  { week: 2, slot: 'C', day: 6, kind: 'inferior' }
+];
+
+const CYCLE_NOTES = [
+  'Anota también la altura del cajón en el box jump: es tu marca de salto más honesta.',
+  'Compara tus tiempos de plancha y repeticiones frente al ciclo anterior.',
+  'Intenta igualar o superar el peso registrado en la misma sesión del ciclo anterior.'
+];
+
+const WEEK_PLAN = [
+  { d: 'Lun', what: 'Pista', gym: null },
+  { d: 'Mar', what: 'Gimnasio', gym: 'A' },
+  { d: 'Mié', what: 'Pista', gym: null },
+  { d: 'Jue', what: 'Gimnasio', gym: 'B' },
+  { d: 'Vie', what: 'Pista', gym: null },
+  { d: 'Sáb', what: 'Gimnasio', gym: 'C' },
+  { d: 'Dom', what: 'Descanso', gym: null }
+];
+
+
+/* VERTICAL — motor de animación del muñeco.
+   Cada ejercicio son keyframes de esqueleto 2D + material (barra, balón, cajón…).
+   Espacio de dibujo: 220 × 170, suelo en y = 150. El muñeco mira a la derecha. */
+
+const ANIM = (() => {
+  const GROUND = 150;
+  const W = 220, H = 170;
+
+  /* Pose base de pie. Cada keyframe solo sobreescribe lo que cambia. */
+  const B = {
+    hd: [110, 36], nk: [110, 55], hp: [110, 93],
+    e1: [115, 74], h1: [116, 95], e2: [105, 74], h2: [104, 95],
+    k1: [112, 122], a1: [110, 150], k2: [108, 122], a2: [110, 150]
+  };
+  const P = o => Object.assign({}, B, o);
+  const J = ['hd', 'nk', 'hp', 'e1', 'h1', 'e2', 'h2', 'k1', 'a1', 'k2', 'a2'];
+
+  /* ---------- interpolación ---------- */
+  const smooth = t => t * t * (3 - 2 * t);
+  function poseAt(keys, t) {
+    let i = 0;
+    while (i < keys.length - 2 && t > keys[i + 1][0]) i++;
+    const [t0, p0] = keys[i], [t1, p1] = keys[i + 1];
+    const u = t1 === t0 ? 0 : smooth((t - t0) / (t1 - t0));
+    const out = {};
+    for (const j of J) out[j] = [p0[j][0] + (p1[j][0] - p0[j][0]) * u, p0[j][1] + (p1[j][1] - p0[j][1]) * u];
+    return out;
+  }
+
+  /* ---------- primitivas de dibujo ---------- */
+  function seg(c, a, b, w, col) {
+    c.strokeStyle = col; c.lineWidth = w; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke();
+  }
+  function limb(c, a, b, d, w, col) { seg(c, a, b, w, col); seg(c, b, d, w * 0.85, col); }
+  function dot(c, p, r, col) { c.fillStyle = col; c.beginPath(); c.arc(p[0], p[1], r, 0, 7); c.fill(); }
+
+  /* Barra vista en escorzo: corta, con los discos de canto. */
+  function barbell(c, x, y, S, half) {
+    half = half || 17;
+    c.strokeStyle = S.iron; c.lineWidth = 3.2; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x - half, y); c.lineTo(x + half, y); c.stroke();
+    c.fillStyle = S.iron;
+    for (const s of [-1, 1]) {
+      c.beginPath(); c.ellipse(x + s * (half - 3), y, 3, 11, 0, 0, 7); c.fill();
+    }
+  }
+  /* Barra perpendicular a la vista: se ve el disco de frente. */
+  function plate(c, x, y, S, r) {
+    r = r || 12;
+    c.strokeStyle = S.iron; c.lineWidth = 4.2;
+    c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
+    c.fillStyle = S.iron; c.beginPath(); c.arc(x, y, 3.2, 0, 7); c.fill();
+  }
+  /* Barra fija de dominadas / jaula: sin discos. */
+  function fixedbar(c, x, y, half, S) {
+    c.strokeStyle = S.iron; c.lineWidth = 4; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x - half, y); c.lineTo(x + half, y); c.stroke();
+    c.lineWidth = 2.6;
+    for (const s of [-1, 1]) { c.beginPath(); c.moveTo(x + s * half, y); c.lineTo(x + s * half, y - 14); c.stroke(); }
+  }
+  /* Mancuerna de canto: desde el lateral se ve el disco, no el asa. */
+  function dumbbell(c, p, S) {
+    c.fillStyle = S.iron;
+    c.beginPath(); c.arc(p[0], p[1], 6.5, 0, 7); c.fill();
+    c.strokeStyle = S.court; c.lineWidth = 1.6;
+    c.beginPath(); c.arc(p[0], p[1], 2.6, 0, 7); c.stroke();
+  }
+  function ball(c, x, y, r, S) {
+    c.fillStyle = S.leather; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+    c.strokeStyle = S.court; c.lineWidth = 1.1;
+    c.beginPath(); c.moveTo(x - r, y); c.lineTo(x + r, y); c.stroke();
+    c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
+    c.beginPath(); c.ellipse(x, y, r * 0.42, r, 0, 0, 7); c.stroke();
+  }
+  function slab(c, x, y, w, h, S, col) {
+    c.fillStyle = col || S.gear; c.beginPath(); c.roundRect(x, y, w, h, 2.5); c.fill();
+  }
+  function bench(c, x, y, w, S) {
+    slab(c, x, y, w, 7, S);
+    c.fillStyle = S.gear;
+    c.fillRect(x + 5, y + 7, 3.5, GROUND - y - 7);
+    c.fillRect(x + w - 8.5, y + 7, 3.5, GROUND - y - 7);
+  }
+  function cable(c, from, to, S) {
+    c.strokeStyle = S.cable; c.lineWidth = 1.6; c.setLineDash([]);
+    c.beginPath(); c.moveTo(from[0], from[1]); c.lineTo(to[0], to[1]); c.stroke();
+    slab(c, from[0] - 5, from[1] - 5, 10, 10, S);
+  }
+  function band(c, a, b, S) {
+    c.strokeStyle = S.band; c.lineWidth = 2.4; c.setLineDash([4, 3]);
+    const mx = (a[0] + b[0]) / 2, my = Math.max(a[1], b[1]) + 5;
+    c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo(mx, my, b[0], b[1]); c.stroke();
+    c.setLineDash([]);
+  }
+  function wall(c, x, S) {
+    c.strokeStyle = S.faint; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(x, 18); c.lineTo(x, GROUND); c.stroke();
+    c.lineWidth = 1;
+    for (let y = 26; y < GROUND; y += 12) { c.beginPath(); c.moveTo(x, y); c.lineTo(x - 7, y + 7); c.stroke(); }
+  }
+
+  /* ---------- ejercicios ---------- */
+  /* keys: [tiempo 0-1, pose]. La última pose debe cerrar el bucle. */
+  const EXR = {};
+
+  /* --- SENTADILLA --- */
+  const sqTop = P({ hd: [108, 38], nk: [110, 56], e1: [101, 77], h1: [100, 55], e2: [99, 77], h2: [98, 55] });
+  const sqBot = P({
+    hd: [119, 76], nk: [110, 92], hp: [92, 124], e1: [92, 108], h1: [100, 88], e2: [90, 108], h2: [98, 88],
+    k1: [129, 125], a1: [112, 150], k2: [127, 125], a2: [108, 150]
+  });
+  EXR.squat = {
+    dur: 3400, keys: [[0, sqTop], [.45, sqBot], [.82, sqTop], [1, sqTop]],
+    post: (c, p, t, S) => barbell(c, p.nk[0] + 1, p.nk[1] - 6, S)
+  };
+
+  /* --- ZANCADA BÚLGARA --- */
+  const buTop = P({
+    hd: [104, 36], nk: [106, 55], hp: [108, 94],
+    e1: [114, 76], h1: [117, 104], e2: [100, 76], h2: [99, 104],
+    k1: [104, 122], a1: [102, 150], k2: [130, 118], a2: [150, 122]
+  });
+  const buBot = P({
+    hd: [100, 58], nk: [103, 77], hp: [106, 116],
+    e1: [112, 98], h1: [115, 126], e2: [96, 98], h2: [95, 126],
+    k1: [116, 132], a1: [102, 150], k2: [128, 140], a2: [150, 122]
+  });
+  EXR.bulgarian = {
+    dur: 3200, keys: [[0, buTop], [.45, buBot], [.85, buTop], [1, buTop]],
+    pre: (c, p, t, S) => bench(c, 144, 122, 46, S),
+    post: (c, p, t, S) => { dumbbell(c, p.h1, S); dumbbell(c, p.h2, S); }
+  };
+
+  /* --- PESO MUERTO RUMANO --- */
+  const rdTop = P({ h1: [114, 98], h2: [106, 98], e1: [114, 76], e2: [106, 76] });
+  const rdBot = P({
+    hd: [138, 70], nk: [128, 82], hp: [96, 96],
+    e1: [126, 104], h1: [124, 126], e2: [124, 104], h2: [122, 126],
+    k1: [104, 122], a1: [102, 150], k2: [100, 122], a2: [102, 150]
+  });
+  EXR.rdl = {
+    dur: 3600, keys: [[0, rdTop], [.5, rdBot], [.88, rdTop], [1, rdTop]],
+    post: (c, p, t, S) => barbell(c, (p.h1[0] + p.h2[0]) / 2, (p.h1[1] + p.h2[1]) / 2 + 3, S)
+  };
+
+  /* --- HIP THRUST --- */
+  const htDown = {
+    hd: [72, 104], nk: [86, 108], hp: [120, 134],
+    e1: [98, 118], h1: [104, 132], e2: [96, 116], h2: [102, 130],
+    k1: [152, 120], a1: [154, 150], k2: [150, 120], a2: [150, 150]
+  };
+  const htUp = {
+    hd: [70, 92], nk: [84, 98], hp: [122, 110],
+    e1: [98, 104], h1: [108, 112], e2: [96, 102], h2: [106, 110],
+    k1: [152, 116], a1: [154, 150], k2: [150, 116], a2: [150, 150]
+  };
+  EXR.hipthrust = {
+    dur: 2800, keys: [[0, htDown], [.4, htUp], [.6, htUp], [.9, htDown], [1, htDown]],
+    pre: (c, p, t, S) => bench(c, 62, 112, 44, S),
+    post: (c, p, t, S) => barbell(c, p.hp[0], p.hp[1] - 2, S)
+  };
+
+  /* --- BOX JUMP --- */
+  const bjStand = P({ hd: [98, 36], nk: [100, 55], hp: [100, 93], e1: [104, 74], h1: [104, 96], e2: [96, 74], h2: [96, 96], k1: [102, 122], a1: [100, 150], k2: [98, 122], a2: [100, 150] });
+  const bjDip = P({
+    hd: [104, 58], nk: [100, 74], hp: [88, 108], e1: [82, 88], h1: [72, 100], e2: [80, 88], h2: [70, 100],
+    k1: [112, 128], a1: [100, 150], k2: [110, 128], a2: [100, 150]
+  });
+  const bjFly = P({
+    hd: [128, 8], nk: [128, 26], hp: [126, 62], e1: [134, 12], h1: [138, -6], e2: [130, 12], h2: [134, -6],
+    k1: [138, 84], a1: [132, 108], k2: [136, 84], a2: [130, 108]
+  });
+  const bjLand = P({
+    hd: [156, 42], nk: [154, 58], hp: [148, 88], e1: [162, 70], h1: [170, 84], e2: [160, 70], h2: [168, 84],
+    k1: [166, 96], a1: [156, 116], k2: [164, 96], a2: [152, 116]
+  });
+  const bjTall = P({ hd: [154, 4], nk: [154, 23], hp: [154, 60], e1: [158, 42], h1: [158, 62], e2: [150, 42], h2: [150, 62], k1: [155, 89], a1: [154, 116], k2: [153, 89], a2: [154, 116] });
+  const bjStep = P({ hd: [132, 30], nk: [130, 48], hp: [124, 84], e1: [116, 66], h1: [108, 82], e2: [114, 66], h2: [106, 82], k1: [128, 112], a1: [116, 138], k2: [126, 112], a2: [114, 138] });
+  EXR.boxjump = {
+    dur: 4200,
+    keys: [[0, bjStand], [.16, bjStand], [.3, bjDip], [.42, bjFly], [.54, bjLand], [.66, bjTall], [.8, bjStep], [.94, bjStand], [1, bjStand]],
+    pre: (c, p, t, S) => { slab(c, 142, 116, 56, GROUND - 116, S); c.fillStyle = S.faint; c.fillRect(142, 116, 56, 2.5); }
+  };
+
+  /* --- DESPLAZAMIENTO LATERAL (vista frontal) --- */
+  const lat = (dx, spread, dip) => ({
+    hd: [110 + dx, 40 - dip * .3], nk: [110 + dx, 58 - dip * .3], hp: [110 + dx, 92 - dip],
+    e1: [124 + dx, 76 - dip], h1: [130 + dx, 96 - dip], e2: [96 + dx, 76 - dip], h2: [90 + dx, 96 - dip],
+    k1: [110 + dx + spread * .5, 120 - dip * .4], a1: [110 + dx + spread, 150],
+    k2: [110 + dx - spread * .5, 120 - dip * .4], a2: [110 + dx - spread, 150]
+  });
+  EXR.lateral = {
+    dur: 2400,
+    keys: [[0, lat(0, 15, 14)], [.28, lat(6, 30, 18)], [.5, lat(12, 15, 14)], [.78, lat(6, 30, 18)], [1, lat(0, 15, 14)]],
+    post: (c, p, t, S) => band(c, [p.a1[0], p.a1[1] - 12], [p.a2[0], p.a2[1] - 12], S)
+  };
+
+  /* --- NORDIC CURL --- */
+  const noUp = {
+    hd: [110, 44], nk: [110, 62], hp: [110, 106],
+    e1: [118, 82], h1: [120, 104], e2: [102, 82], h2: [100, 104],
+    k1: [110, 148], a1: [84, 148], k2: [110, 148], a2: [84, 148]
+  };
+  const noMid = {
+    hd: [148, 76], nk: [136, 88], hp: [112, 114],
+    e1: [150, 98], h1: [160, 112], e2: [148, 98], h2: [158, 112],
+    k1: [110, 148], a1: [84, 148], k2: [110, 148], a2: [84, 148]
+  };
+  const noDown = {
+    hd: [172, 122], nk: [156, 126], hp: [116, 132],
+    e1: [166, 138], h1: [176, 148], e2: [164, 138], h2: [174, 148],
+    k1: [110, 148], a1: [84, 148], k2: [110, 148], a2: [84, 148]
+  };
+  EXR.nordic = {
+    dur: 4600, keys: [[0, noUp], [.5, noMid], [.72, noDown], [.9, noUp], [1, noUp]],
+    pre: (c, p, t, S) => { slab(c, 74, 140, 26, 10, S); slab(c, 100, 143, 24, 7, S, S.faint); }
+  };
+
+  /* --- LANZAMIENTO ROTACIONAL (frontal con giro) --- */
+  const rot = (sw, ax, ay, dip) => ({
+    hd: [108, 40], nk: [108, 58], hp: [108, 92 - dip * .2],
+    e1: [108 + sw, 76], h1: [ax, ay], e2: [108 - sw * .3, 74], h2: [ax - 6, ay + 4],
+    k1: [108 + 14, 120 - dip], a1: [108 + 18, 150], k2: [108 - 14, 120 - dip], a2: [108 - 18, 150]
+  });
+  EXR.medrot = {
+    dur: 2600,
+    keys: [[0, rot(-16, 82, 98, 6)], [.18, rot(-20, 72, 104, 10)], [.36, rot(8, 112, 80, 4)],
+    [.5, rot(20, 156, 64, 0)], [.72, rot(18, 150, 70, 2)], [1, rot(-16, 82, 98, 6)]],
+    pre: (c, p, t, S) => wall(c, 208, S),
+    post: (c, p, t, S) => {
+      if (t < .5) ball(c, p.h1[0] + 6, p.h1[1] - 2, 9, S);
+      else { const u = (t - .5) / .32, x = p.h1[0] + 6 + u * 46; if (u < 1) ball(c, Math.min(x, 198), p.h1[1] - 2 - u * 6, 9, S); }
+    }
+  };
+
+  /* --- PALLOF PRESS (frontal) --- */
+  const paIn = {
+    hd: [108, 40], nk: [108, 58], hp: [108, 94],
+    e1: [124, 74], h1: [112, 78], e2: [92, 74], h2: [104, 78],
+    k1: [120, 120], a1: [124, 150], k2: [96, 120], a2: [92, 150]
+  };
+  const paOut = {
+    hd: [108, 40], nk: [108, 58], hp: [108, 94],
+    e1: [126, 68], h1: [148, 74], e2: [92, 70], h2: [142, 76],
+    k1: [120, 120], a1: [124, 150], k2: [96, 120], a2: [92, 150]
+  };
+  EXR.pallof = {
+    dur: 3000, keys: [[0, paIn], [.35, paOut], [.62, paOut], [.92, paIn], [1, paIn]],
+    pre: (c, p, t, S) => cable(c, [206, 76], p.h1, S)
+  };
+
+  /* --- PLANCHA CON TOQUE DE HOMBRO --- */
+  const plBase = {
+    hd: [62, 104], nk: [78, 108], hp: [124, 120],
+    e1: [86, 127], h1: [90, 147], e2: [80, 127], h2: [84, 147],
+    k1: [152, 130], a1: [178, 146], k2: [150, 130], a2: [176, 146]
+  };
+  const plTap = Object.assign({}, plBase, { e1: [98, 116], h1: [82, 102] });
+  const plTap2 = Object.assign({}, plBase, { e2: [96, 118], h2: [80, 104] });
+  EXR.planktap = {
+    dur: 3600, keys: [[0, plBase], [.2, plTap], [.4, plBase], [.6, plTap2], [.8, plBase], [1, plBase]]
+  };
+
+  /* --- ELEVACIÓN DE PIERNAS COLGADO --- */
+  const hgDown = {
+    hd: [110, 52], nk: [110, 70], hp: [110, 106],
+    e1: [113, 46], h1: [114, 24], e2: [107, 46], h2: [106, 24],
+    k1: [111, 130], a1: [110, 156], k2: [109, 130], a2: [110, 156]
+  };
+  const hgUp = {
+    hd: [104, 52], nk: [106, 70], hp: [108, 104],
+    e1: [113, 46], h1: [114, 24], e2: [107, 46], h2: [106, 24],
+    k1: [136, 92], a1: [162, 84], k2: [134, 94], a2: [160, 86]
+  };
+  EXR.hanging = {
+    dur: 3200, keys: [[0, hgDown], [.36, hgUp], [.5, hgUp], [.86, hgDown], [1, hgDown]],
+    pre: (c, p, t, S) => fixedbar(c, 110, 22, 40, S)
+  };
+
+  /* --- ROTACIÓN EN POLEA ALTA-BAJA (leñador) --- */
+  const chHigh = {
+    hd: [106, 40], nk: [106, 58], hp: [108, 94],
+    e1: [124, 52], h1: [146, 42], e2: [118, 54], h2: [140, 46],
+    k1: [120, 120], a1: [124, 150], k2: [94, 120], a2: [90, 150]
+  };
+  const chLow = {
+    hd: [110, 44], nk: [110, 62], hp: [108, 96],
+    e1: [92, 84], h1: [70, 108], e2: [96, 82], h2: [76, 106],
+    k1: [122, 122], a1: [124, 150], k2: [94, 122], a2: [90, 150]
+  };
+  EXR.chop = {
+    dur: 2800, keys: [[0, chHigh], [.3, chLow], [.46, chLow], [.88, chHigh], [1, chHigh]],
+    pre: (c, p, t, S) => cable(c, [200, 26], p.h1, S)
+  };
+
+  /* --- SUPERMAN --- */
+  const suFlat = {
+    hd: [58, 140], nk: [74, 142], hp: [126, 144],
+    e1: [50, 144], h1: [26, 146], e2: [50, 146], h2: [26, 148],
+    k1: [156, 144], a1: [186, 146], k2: [154, 146], a2: [184, 148]
+  };
+  const suUp = {
+    hd: [56, 118], nk: [74, 128], hp: [126, 144],
+    e1: [46, 124], h1: [22, 122], e2: [46, 126], h2: [22, 124],
+    k1: [158, 136], a1: [188, 122], k2: [156, 138], a2: [186, 124]
+  };
+  EXR.superman = {
+    dur: 3000, keys: [[0, suFlat], [.34, suUp], [.56, suUp], [.9, suFlat], [1, suFlat]]
+  };
+
+  /* --- PRESS BANCA --- */
+  /* Tumbado boca arriba: abajo el codo cae junto al banco y la barra roza el esternón. */
+  const beDown = {
+    hd: [60, 100], nk: [78, 102], hp: [126, 106],
+    e1: [82, 118], h1: [98, 88], e2: [80, 120], h2: [96, 90],
+    k1: [156, 118], a1: [166, 150], k2: [154, 118], a2: [162, 150]
+  };
+  const beUp = {
+    hd: [60, 100], nk: [78, 102], hp: [126, 106],
+    e1: [88, 82], h1: [94, 58], e2: [86, 84], h2: [92, 60],
+    k1: [156, 118], a1: [166, 150], k2: [154, 118], a2: [162, 150]
+  };
+  EXR.bench = {
+    dur: 3200, keys: [[0, beUp], [.42, beDown], [.52, beDown], [.86, beUp], [1, beUp]],
+    pre: (c, p, t, S) => { bench(c, 54, 110, 92, S); },
+    post: (c, p, t, S) => plate(c, p.h1[0], p.h1[1], S, 10)
+  };
+
+  /* --- DOMINADAS --- */
+  const puHang = {
+    hd: [110, 54], nk: [110, 72], hp: [110, 108],
+    e1: [113, 48], h1: [114, 26], e2: [107, 48], h2: [106, 26],
+    k1: [113, 134], a1: [118, 158], k2: [107, 134], a2: [112, 158]
+  };
+  const puTop = {
+    hd: [110, 26], nk: [112, 44], hp: [112, 80],
+    e1: [126, 46], h1: [116, 26], e2: [98, 46], h2: [108, 26],
+    k1: [118, 108], a1: [126, 130], k2: [112, 108], a2: [120, 130]
+  };
+  EXR.pullup = {
+    dur: 3000, keys: [[0, puHang], [.34, puTop], [.46, puTop], [.86, puHang], [1, puHang]],
+    pre: (c, p, t, S) => fixedbar(c, 110, 24, 40, S)
+  };
+
+  /* --- PRESS MILITAR --- */
+  const ohRack = P({ hd: [108, 38], nk: [110, 56], e1: [118, 74], h1: [112, 58], e2: [102, 74], h2: [104, 58] });
+  const ohLock = P({ hd: [112, 36], nk: [110, 55], e1: [116, 46], h1: [112, 24], e2: [104, 46], h2: [108, 24] });
+  EXR.ohp = {
+    dur: 3000, keys: [[0, ohRack], [.34, ohLock], [.5, ohLock], [.86, ohRack], [1, ohRack]],
+    post: (c, p, t, S) => barbell(c, p.h1[0], p.h1[1], S)
+  };
+
+  /* --- REMO HORIZONTAL (polea sentado) --- */
+  const roOut = {
+    hd: [86, 58], nk: [92, 74], hp: [80, 118],
+    e1: [116, 84], h1: [140, 92], e2: [114, 86], h2: [138, 94],
+    k1: [124, 106], a1: [156, 130], k2: [122, 110], a2: [154, 134]
+  };
+  const roIn = {
+    hd: [78, 52], nk: [86, 70], hp: [80, 118],
+    e1: [72, 88], h1: [94, 100], e2: [70, 90], h2: [92, 102],
+    k1: [124, 106], a1: [156, 130], k2: [122, 110], a2: [154, 134]
+  };
+  EXR.row = {
+    dur: 3000, keys: [[0, roOut], [.36, roIn], [.5, roIn], [.88, roOut], [1, roOut]],
+    pre: (c, p, t, S) => { cable(c, [206, 100], p.h1, S); slab(c, 62, 128, 44, 6, S); slab(c, 158, 126, 22, 8, S); }
+  };
+
+  /* --- PASE DE PECHO CON BALÓN MEDICINAL --- */
+  const mpLoad = P({ hd: [108, 40], nk: [108, 58], hp: [106, 94], e1: [98, 76], h1: [116, 78], e2: [96, 78], h2: [114, 80], k1: [116, 120], a1: [110, 150], k2: [104, 120], a2: [104, 150] });
+  const mpDip = P({ hd: [110, 52], nk: [108, 70], hp: [102, 104], e1: [96, 86], h1: [114, 88], e2: [94, 88], h2: [112, 90], k1: [122, 128], a1: [110, 150], k2: [110, 128], a2: [104, 150] });
+  const mpRel = P({ hd: [116, 34], nk: [114, 52], hp: [110, 90], e1: [132, 60], h1: [154, 62], e2: [130, 62], h2: [152, 64], k1: [120, 118], a1: [112, 150], k2: [108, 118], a2: [104, 150] });
+  EXR.medpass = {
+    dur: 2600,
+    keys: [[0, mpLoad], [.2, mpDip], [.34, mpRel], [.5, mpRel], [.84, mpLoad], [1, mpLoad]],
+    pre: (c, p, t, S) => wall(c, 208, S),
+    post: (c, p, t, S) => {
+      if (t < .34) ball(c, p.h1[0] + 6, p.h1[1], 10, S);
+      else if (t < .62) { const u = (t - .34) / .28; ball(c, 160 + u * 38, p.h1[1] - u * 4, 10, S); }
+      else ball(c, p.h1[0] + 6, p.h1[1], 10, S);
+    }
+  };
+
+  /* --- FACE PULL --- */
+  const fpOut = P({ hd: [104, 40], nk: [106, 58], hp: [108, 94], e1: [126, 60], h1: [148, 54], e2: [124, 62], h2: [146, 56], k1: [110, 122], a1: [108, 150], k2: [106, 122], a2: [108, 150] });
+  const fpIn = P({ hd: [104, 40], nk: [106, 58], hp: [108, 94], e1: [128, 46], h1: [116, 34], e2: [126, 48], h2: [114, 36], k1: [110, 122], a1: [108, 150], k2: [106, 122], a2: [108, 150] });
+  EXR.facepull = {
+    dur: 2800, keys: [[0, fpOut], [.34, fpIn], [.5, fpIn], [.88, fpOut], [1, fpOut]],
+    pre: (c, p, t, S) => cable(c, [206, 44], p.h1, S)
+  };
+
+  /* ---------- render ---------- */
+  function draw(c, key, t, S, w, h, zoom) {
+    const E = EXR[key]; if (!E) return;
+    c.clearRect(0, 0, w, h);
+    c.save();
+    const s = Math.min(w / W, h / H) * (zoom || 1);
+    c.translate((w - W * s) / 2, (h - H * s) / 2); c.scale(s, s);
+
+    /* suelo: línea de cal */
+    c.strokeStyle = S.faint; c.lineWidth = 1.4;
+    c.beginPath(); c.moveTo(6, GROUND + 2); c.lineTo(W - 6, GROUND + 2); c.stroke();
+
+    const p = poseAt(E.keys, t);
+    if (E.pre) E.pre(c, p, t, S);
+
+    limb(c, p.nk, p.e2, p.h2, 5, S.dim);
+    limb(c, p.hp, p.k2, p.a2, 6, S.dim);
+    seg(c, p.nk, p.hp, 11, S.chalk);
+    dot(c, p.hd, 9.5, S.chalk);
+    seg(c, p.hd, p.nk, 5, S.chalk);
+    limb(c, p.nk, p.e1, p.h1, 5.4, S.chalk);
+    limb(c, p.hp, p.k1, p.a1, 6.4, S.chalk);
+
+    if (E.post) E.post(c, p, t, S);
+    c.restore();
+  }
+
+  /* Bucle único para todos los canvas visibles. */
+  const live = new Set();
+  let raf = null, reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function style() {
+    const cs = getComputedStyle(document.documentElement);
+    const v = n => cs.getPropertyValue(n).trim();
+    return {
+      chalk: v('--chalk'), dim: v('--chalk-dim'), faint: v('--hair'),
+      leather: v('--leather'), iron: v('--iron'), gear: v('--gear'),
+      cable: v('--iron'), band: v('--rim'), court: v('--court')
+    };
+  }
+
+  function tick(now) {
+    const S = style();
+    for (const el of live) {
+      const E = EXR[el.dataset.anim]; if (!E) continue;
+      const t = reduced ? 0.42 : (now % E.dur) / E.dur;
+      draw(el._ctx, el.dataset.anim, t, S, el._w, el._h, el._zoom);
+    }
+    raf = live.size ? requestAnimationFrame(tick) : null;
+  }
+
+  function mount(el) {
+    const dpr = Math.min(devicePixelRatio || 1, 3);
+    const r = el.getBoundingClientRect();
+    el._w = Math.round(r.width) || 220;
+    el._h = Math.round(r.height) || 170;
+    el._zoom = parseFloat(el.dataset.zoom) || 1;
+    el.width = el._w * dpr; el.height = el._h * dpr;
+    el._ctx = el.getContext('2d');
+    el._ctx.scale(dpr, dpr);
+    live.add(el);
+    if (!raf) raf = requestAnimationFrame(tick);
+  }
+  function unmountAll() { live.clear(); }
+
+  return { mount, unmountAll, keys: () => Object.keys(EXR), draw, style };
+})();
+
+
+/* VERTICAL — estado, navegación y pantallas. */
+
+/* ============ estado ============ */
+const KEY = 'vertical.v1';
+const DEF = { v: 1, idx: 0, cycles: 0, log: [], active: null, body: [], jump: [], theme: 'auto', sound: true };
+
+let S = load();
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return structuredClone(DEF);
+    return Object.assign(structuredClone(DEF), JSON.parse(raw));
+  } catch (e) { return structuredClone(DEF); }
+}
+let saveTimer = null;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); }
+    catch (e) { toast('No se han podido guardar los datos en este dispositivo.'); }
+  }, 120);
+}
+
+/* ============ utilidades ============ */
+const $ = (s, r = document) => r.querySelector(s);
+const el = (t, c, h) => { const n = document.createElement(t); if (c) n.className = c; if (h != null) n.innerHTML = h; return n; };
+const esc = s => String(s).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+const today = () => new Date().toISOString().slice(0, 10);
+const DOW = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const DOWL = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const fmtDate = d => { const x = new Date(d + 'T12:00'); return `${x.getDate()} ${['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][x.getMonth()]}`; };
+const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : null; };
+const topReps = r => Math.max(...(String(r).match(/\d+/g) || [0]).map(Number));
+
+/* Configuración de campos según el tipo de registro. */
+const FIELDS = {
+  weight: [{ k: 'w', l: 'kg', ph: '—' }, { k: 'r', l: 'reps', ph: '—' }],
+  bw: [{ k: 'w', l: 'lastre kg', ph: '0' }, { k: 'r', l: 'reps', ph: '—' }],
+  height: [{ k: 'w', l: 'cm cajón', ph: '—' }, { k: 'r', l: 'reps', ph: '—' }],
+  time: [{ k: 'r', l: 'segundos', ph: '—' }],
+  steps: [{ k: 'r', l: 'pasos/lado', ph: '—' }]
+};
+const UNIT = { weight: 'kg', bw: 'kg', height: 'cm', time: 's', steps: 'pasos' };
+
+/* La sesión que toca ahora según el punto del microciclo. */
+const cur = () => CYCLE[S.idx % 6];
+const dayOf = c => DAYS[c.kind];
+
+/* ============ navegación ============ */
+let stack = [{ n: 'hoy' }];
+const here = () => stack[stack.length - 1];
+function go(v) { stack.push(v); render(); }
+function back() { if (stack.length > 1) stack.pop(); render(); }
+function tab(n) { stack = [{ n }]; render(); }
+
+/* ============ sonido y aviso ============ */
+let actx = null;
+function beep(times = 3) {
+  if (!S.sound) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    for (let i = 0; i < times; i++) {
+      const o = actx.createOscillator(), g = actx.createGain();
+      const t0 = actx.currentTime + i * 0.19;
+      o.frequency.value = i === times - 1 ? 1046 : 784;
+      o.connect(g); g.connect(actx.destination);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.32, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.15);
+      o.start(t0); o.stop(t0 + 0.16);
+    }
+  } catch (e) { /* sin audio disponible */ }
+}
+let toastT = null;
+function toast(msg) {
+  let t = $('#toast');
+  if (!t) { t = el('div'); t.id = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position: 'fixed', left: '50%', bottom: 'calc(120px + env(safe-area-inset-bottom))',
+    transform: 'translateX(-50%)', zIndex: 90, background: 'var(--chalk)', color: 'var(--court)',
+    padding: '10px 16px', borderRadius: '11px', fontSize: '14px', maxWidth: '86%',
+    textAlign: 'center', boxShadow: 'var(--shadow)', opacity: '1', transition: 'opacity .3s'
+  });
+  clearTimeout(toastT);
+  toastT = setTimeout(() => { t.style.opacity = '0'; }, 2600);
+}
+
+/* ============ cronómetro de descanso ============ */
+const R = { left: 0, total: 0, iv: null };
+function startRest(sec) {
+  clearInterval(R.iv);
+  R.total = sec; R.left = sec;
+  paintRest(); $('#rest').classList.add('on');
+  R.iv = setInterval(() => {
+    R.left--;
+    if (R.left <= 0) { stopRest(); beep(); toast('Descanso terminado. A por la siguiente.'); }
+    else paintRest();
+  }, 1000);
+}
+function stopRest() { clearInterval(R.iv); R.iv = null; $('#rest').classList.remove('on'); }
+function paintRest() {
+  const m = Math.floor(R.left / 60), s = R.left % 60;
+  $('#rest-t').textContent = m ? `${m}:${String(s).padStart(2, '0')}` : `${s}s`;
+  $('#rest-f').style.width = (100 - (R.left / R.total) * 100) + '%';
+}
+
+/* ============ consultas al historial ============ */
+function lastEntry(exId, beforeActive = true) {
+  for (let i = S.log.length - 1; i >= 0; i--) {
+    const s = S.log[i].sets[exId];
+    if (s && s.some(x => x.done)) return { sets: s.filter(x => x.done), date: S.log[i].date };
+  }
+  return null;
+}
+function allSets(exId) {
+  const out = [];
+  for (const ses of S.log) {
+    const s = ses.sets[exId];
+    if (s) { const d = s.filter(x => x.done); if (d.length) out.push({ date: ses.date, sets: d }); }
+  }
+  return out;
+}
+const bestOf = sets => sets.reduce((b, x) => {
+  const w = x.w || 0, r = x.r || 0;
+  const score = w > 0 ? w * 1000 + r : r;
+  return !b || score > b.score ? { w, r, score } : b;
+}, null);
+const e1rm = (w, r) => (w > 0 && r > 0) ? Math.round(w * (1 + r / 30)) : 0;
+const volume = sets => sets.reduce((v, x) => v + (x.w || 0) * (x.r || 0), 0);
+
+function prOf(exId) {
+  const hist = allSets(exId); if (!hist.length) return null;
+  let best = null;
+  for (const h of hist) { const b = bestOf(h.sets); if (b && (!best || b.score > best.score)) best = Object.assign({}, b, { date: h.date }); }
+  return best;
+}
+
+/* Regla del plan: subir peso si cerraste todas las series en el tope de reps. */
+function suggestUp(exId, reps) {
+  const l = lastEntry(exId); if (!l) return false;
+  const t = topReps(reps);
+  return l.sets.length >= 2 && l.sets.every(x => (x.r || 0) >= t);
+}
+
+/* ============ pantallas ============ */
+const app = () => $('#app');
+
+function render() {
+  const v = here();
+  const s = el('main', 'screen');
+  ({ hoy: vHoy, sesion: vSesion, ex: vEx, plan: vPlan, lista: vLista, prog: vProg, ajustes: vAjustes })[v.n](s, v);
+  const old = $('main.screen');
+  if (old) old.replaceWith(s); else app().insertBefore(s, $('.tabbar'));
+  paintTabs(v.n);
+  mountCanvases(s);
+  window.scrollTo(0, 0);
+}
+
+function mountCanvases(root) {
+  ANIM.unmountAll();
+  requestAnimationFrame(() => root.querySelectorAll('canvas[data-anim]').forEach(c => ANIM.mount(c)));
+}
+
+/* Marca: el aro y la red, que a la vez dibujan la V. */
+const LOGO = size => `<svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true" fill="none">
+  <path d="M9.5 17h45" stroke="var(--chalk)" stroke-width="6" stroke-linecap="round"/>
+  <path d="M25 18 32 51M39 18 32 51" stroke="var(--chalk)" stroke-width="2.4" stroke-linecap="round" opacity=".34"/>
+  <path d="M14 22 32 52 50 22" stroke="var(--leather)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+
+function brand(s) {
+  const b = el('div');
+  b.style.cssText = 'display:flex;align-items:center;gap:9px;padding:calc(env(safe-area-inset-top) + 14px) 0 0';
+  b.innerHTML = `${LOGO(24)}<span style="font-weight:800;font-size:15px;letter-spacing:.19em">VERTICAL</span>`;
+  s.appendChild(b);
+}
+
+function header(s, eyebrow, title, sub, withBack) {
+  const h = el('header', 'hdr');
+  h.innerHTML =
+    (withBack ? `<button class="bk" style="display:flex;align-items:center;gap:5px;color:var(--leather);font-size:15.5px;margin-bottom:8px">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Atrás</button>` : '') +
+    `<p class="eyebrow">${esc(eyebrow)}</p><h1>${esc(title)}</h1>` +
+    (sub ? `<p class="sub">${esc(sub)}</p>` : '') + `<span class="arc"></span>`;
+  if (withBack) h.querySelector('.bk').onclick = back;
+  s.appendChild(h);
+  return h;
+}
+
+/* ---------- HOY ---------- */
+function vHoy(s) {
+  const c = cur(), d = dayOf(c);
+  const now = new Date().getDay();
+  const isToday = now === c.day;
+  const wait = (c.day - now + 7) % 7;
+
+  brand(s);
+  header(s, `Ciclo ${S.cycles + 1} · Semana ${c.week}`,
+    isToday ? '¡Hoy toca gimnasio!' : `Toca el ${DOWL[c.day]}`,
+    isToday ? 'Los pesos del ciclo anterior ya están puestos como referencia.'
+      : (wait === 0 ? '' : `Faltan ${wait} ${wait === 1 ? 'día' : 'días'}. Mientras, pista.`));
+
+  const body = el('div', 'stack-lg');
+
+  /* Tarjeta de la sesión */
+  const card = el('section', 'card today');
+  const totalSets = d.items.reduce((n, i) => n + i.sets, 0);
+  const est = Math.round(d.items.reduce((m, i) => m + i.sets * (i.rest + 45), 0) / 60);
+  card.innerHTML = `
+    <div>
+      <span class="slot">Día ${c.slot} <span style="color:var(--chalk-mute)">·</span> ${esc(DOW[c.day])}</span>
+      <h2 style="margin-top:6px">${esc(d.title)}</h2>
+      <p class="sub" style="margin-top:5px">${esc(d.subtitle)}</p>
+    </div>
+    <div class="meta">
+      <span><b>${d.items.length}</b> ejercicios</span>
+      <span><b>${totalSets}</b> series</span>
+      <span>~<b>${est}</b> min</span>
+    </div>`;
+  const btn = el('button', 'btn');
+  btn.innerHTML = S.active
+    ? 'Continuar sesión'
+    : `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12z"/></svg> Empezar sesión`;
+  btn.onclick = () => { if (!S.active) newSession(); go({ n: 'sesion' }); };
+  card.appendChild(btn);
+  body.appendChild(card);
+
+  /* Calentamiento */
+  const wu = el('section');
+  wu.innerHTML = `<p class="sect-title">Calentamiento</p>
+    <div class="card" style="padding:14px 15px;font-size:14.5px;line-height:1.45;color:var(--chalk-dim)">${esc(d.warmup)}</div>`;
+  body.appendChild(wu);
+
+  /* Semana */
+  const wk = el('section');
+  wk.innerHTML = `<p class="sect-title">Tu semana</p>`;
+  const grid = el('div', 'week');
+  WEEK_PLAN.forEach((w, i) => {
+    const dow = (i + 1) % 7;
+    const isGym = !!w.gym;
+    const cls = 'day' + (isGym ? ' gym' : '') + (w.what === 'Descanso' ? ' off' : '') + (dow === now ? ' now' : '');
+    grid.appendChild(el('div', cls, `<div class="d">${w.d}</div><div class="m">${isGym ? w.gym : (w.what === 'Pista' ? '●' : '—')}</div>`));
+  });
+  wk.appendChild(grid);
+  wk.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">A · B · C = gimnasio &nbsp;·&nbsp; ● = pista &nbsp;·&nbsp; — = descanso</span>`));
+  body.appendChild(wk);
+
+  /* Ejercicios de hoy */
+  const ex = el('section');
+  ex.innerHTML = `<p class="sect-title">Lo que te espera</p>`;
+  const list = el('div', 'stack');
+  d.items.forEach(it => list.appendChild(exRow(it, null)));
+  ex.appendChild(list);
+  body.appendChild(ex);
+
+  s.appendChild(body);
+}
+
+function exRow(it, sess) {
+  const e = EX[it.ex];
+  const r = el('button', 'exrow');
+  const done = sess ? (sess.sets[it.ex] || []).filter(x => x.done).length : 0;
+  if (done >= it.sets) r.classList.add('done');
+  r.innerHTML = `
+    <span class="thumb"><canvas data-anim="${e.anim}" data-zoom="1.24"></canvas></span>
+    <span class="nm"><strong>${esc(e.name)}</strong><span>${it.sets} × ${esc(it.reps)} · ${it.rest >= 60 ? (it.rest / 60).toFixed(it.rest % 60 ? 1 : 0).replace('.5', ',5') + ' min' : it.rest + ' s'}</span></span>
+    <span class="prog">${sess ? done + '/' + it.sets : ''}</span>`;
+  r.onclick = () => go({ n: 'ex', ex: it.ex, item: it, live: !!sess });
+  return r;
+}
+
+/* ---------- SESIÓN ---------- */
+function newSession() {
+  const c = cur(), d = dayOf(c);
+  const sets = {};
+  d.items.forEach(it => {
+    const prev = lastEntry(it.ex);
+    sets[it.ex] = Array.from({ length: it.sets }, (_, i) => ({
+      w: prev && prev.sets[i] ? prev.sets[i].w : (prev && prev.sets.length ? prev.sets[prev.sets.length - 1].w : null),
+      r: null, done: false
+    }));
+  });
+  S.active = { date: today(), kind: c.kind, week: c.week, slot: c.slot, sets, started: Date.now() };
+  save();
+}
+
+function vSesion(s) {
+  const a = S.active;
+  if (!a) { tab('hoy'); return; }
+  const d = DAYS[a.kind];
+  header(s, `Semana ${a.week} · Día ${a.slot}`, d.title, d.subtitle, true);
+
+  const body = el('div', 'stack-lg');
+  const list = el('div', 'stack');
+  d.items.forEach(it => list.appendChild(exRow(it, a)));
+  body.appendChild(list);
+
+  const total = d.items.reduce((n, i) => n + i.sets, 0);
+  const done = Object.values(a.sets).flat().filter(x => x.done).length;
+
+  const foot = el('section', 'stack');
+  foot.innerHTML = `<p class="hint"><span>Series cerradas</span><b>${done} de ${total}</b></p>`;
+  const fin = el('button', 'btn');
+  fin.textContent = 'Terminar sesión';
+  fin.disabled = done === 0;
+  fin.onclick = () => finish();
+  foot.appendChild(fin);
+  const cancel = el('button', 'btn btn-ghost');
+  cancel.textContent = 'Descartar sesión';
+  cancel.onclick = () => {
+    if (confirm('¿Descartar esta sesión? Se pierde todo lo que has anotado hoy.')) { S.active = null; save(); tab('hoy'); }
+  };
+  foot.appendChild(cancel);
+  foot.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">${esc(d.note)}</span>`));
+  body.appendChild(foot);
+  s.appendChild(body);
+}
+
+function finish() {
+  const a = S.active;
+  Object.keys(a.sets).forEach(k => { a.sets[k] = a.sets[k].filter(x => x.done); if (!a.sets[k].length) delete a.sets[k]; });
+  S.log.push(a);
+  S.active = null;
+  S.idx++;
+  if (S.idx % 6 === 0) S.cycles++;
+  save();
+  stopRest();
+  beep(2);
+  stack = [{ n: 'hoy' }];
+  render();
+  toast('Sesión guardada. Buen trabajo.');
+}
+
+/* ---------- FICHA DE EJERCICIO ---------- */
+function vEx(s, v) {
+  const e = EX[v.ex], it = v.item;
+  const live = v.live && S.active;
+  header(s, ({ inferior: 'Tren inferior', core: 'Core', superior: 'Tren superior' })[e.group], e.name, null, true);
+
+  const body = el('div', 'stack-lg');
+
+  /* escenario animado */
+  const st = el('div', 'stage');
+  st.innerHTML = `<canvas data-anim="${e.anim}"></canvas><span class="badge">Muestra en bucle</span>`;
+  body.appendChild(st);
+
+  if (it) {
+    const spec = el('div', 'card', `<div style="padding:13px 15px;display:flex;justify-content:space-around;text-align:center">
+      <div><div class="k" style="font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)">Series</div><div style="font-family:var(--f-num);font-size:21px;font-weight:700">${it.sets}</div></div>
+      <div><div class="k" style="font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)">Reps</div><div style="font-family:var(--f-num);font-size:21px;font-weight:700">${esc(it.reps)}</div></div>
+      <div><div class="k" style="font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)">Descanso</div><div style="font-family:var(--f-num);font-size:21px;font-weight:700">${it.rest >= 60 ? (it.rest / 60 % 1 ? (it.rest / 60).toFixed(1).replace('.', ',') : it.rest / 60) + '′' : it.rest + '″'}</div></div>
+    </div>`);
+    body.appendChild(spec);
+  }
+
+  /* registro de series */
+  if (live && it) {
+    const sec = el('section');
+    sec.innerHTML = `<p class="sect-title">Registro de hoy</p>`;
+    const prev = lastEntry(v.ex);
+    if (prev) {
+      const txt = prev.sets.map(x => fmtSet(x, e.log)).join('  ·  ');
+      sec.appendChild(el('p', 'hint', `<span>Sesión anterior (${fmtDate(prev.date)})</span>`));
+      sec.appendChild(el('p', '', `<span style="font-family:var(--f-num);font-size:14.5px;color:var(--chalk-dim);font-variant-numeric:tabular-nums">${esc(txt)}</span>`));
+    }
+    if (suggestUp(v.ex, it.reps)) {
+      sec.appendChild(el('div', 'transfer', `Cerraste todas las series en el tope de repeticiones. Toca subir peso.`));
+    }
+    sec.appendChild(setsEditor(v.ex, it, e));
+    body.appendChild(sec);
+  }
+
+  /* técnica */
+  const tec = el('section');
+  tec.innerHTML = `<p class="sect-title">Cómo se hace</p>`;
+  const ul = el('ul', 'cues');
+  e.cues.forEach((c, i) => ul.appendChild(el('li', '', `<b>${String(i + 1).padStart(2, '0')}</b><span>${esc(c)}</span>`)));
+  tec.appendChild(ul);
+  body.appendChild(tec);
+
+  /* transferencia */
+  const tr = el('section');
+  tr.innerHTML = `<p class="sect-title">Para qué sirve en la pista</p>`;
+  tr.appendChild(el('div', 'transfer', esc(e.transfer)));
+  body.appendChild(tr);
+
+  /* histórico */
+  const hist = allSets(v.ex);
+  if (hist.length) {
+    const h = el('section');
+    h.innerHTML = `<p class="sect-title">Tu histórico</p>`;
+    h.appendChild(chartCard(e, hist));
+    const rows = el('div', 'stack');
+    hist.slice(-6).reverse().forEach(x => {
+      rows.appendChild(el('div', 'pr', `
+        <span class="dt">${esc(fmtDate(x.date))}</span>
+        <span class="nm" style="font-family:var(--f-num);font-variant-numeric:tabular-nums;color:var(--chalk-dim);font-size:13.5px">${esc(x.sets.map(y => fmtSet(y, e.log)).join(' · '))}</span>`));
+    });
+    h.appendChild(rows);
+    body.appendChild(h);
+  }
+
+  s.appendChild(body);
+}
+
+/* En español los decimales van con coma. */
+const nf = n => String(+(+n).toFixed(2)).replace('.', ',');
+
+function fmtSet(x, log) {
+  if (log === 'time') return `${nf(x.r || 0)}s`;
+  if (log === 'steps') return `${nf(x.r || 0)} pasos`;
+  if (log === 'bw') return (x.w ? `+${nf(x.w)}kg×` : 'PC×') + nf(x.r || 0);
+  if (log === 'height') return `${nf(x.w || 0)}cm×${nf(x.r || 0)}`;
+  return `${nf(x.w || 0)}kg×${nf(x.r || 0)}`;
+}
+
+function setsEditor(exId, it, e) {
+  const wrap = el('div', 'sets');
+  const arr = S.active.sets[exId];
+  const flds = FIELDS[e.log];
+
+  arr.forEach((set, i) => {
+    const row = el('div', 'setrow' + (set.done ? ' done' : ''));
+    row.style.gridTemplateColumns = flds.length === 1 ? '30px 1fr 46px' : '30px 1fr 1fr 46px';
+    row.appendChild(el('span', 'n', String(i + 1)));
+    flds.forEach(f => {
+      const fd = el('span', 'fld');
+      fd.innerHTML = `<label>${f.l}</label><input inputmode="decimal" enterkeyhint="next" placeholder="${f.ph}" value="${set[f.k] ?? ''}">`;
+      const inp = fd.querySelector('input');
+      inp.oninput = () => { set[f.k] = num(inp.value); save(); };
+      wrap.appendChild ? null : null;
+      row.appendChild(fd);
+    });
+    const t = el('button', 'tick');
+    t.setAttribute('aria-label', set.done ? 'Deshacer serie' : 'Cerrar serie');
+    t.innerHTML = `<svg viewBox="0 0 24 24"><path d="M4 12.5l5.2 5.2L20 7"/></svg>`;
+    t.onclick = () => {
+      if (!set.done) {
+        const need = flds.find(f => set[f.k] == null && f.k === 'r');
+        if (need) { toast('Anota las repeticiones antes de cerrar la serie.'); return; }
+        set.done = true; save();
+        row.classList.add('done');
+        startRest(it.rest);
+        if (arr.every(x => x.done)) toast('Ejercicio completo.');
+      } else { set.done = false; save(); row.classList.remove('done'); }
+      refreshTick();
+    };
+    row.appendChild(t);
+    wrap.appendChild(row);
+  });
+  function refreshTick() { }
+  return wrap;
+}
+
+/* ---------- PLAN ---------- */
+function vPlan(s) {
+  header(s, 'El programa', 'Microciclo de dos semanas', 'Las semanas van en espejo: lo que en la 1 es tren inferior, en la 2 es tren superior.');
+  const body = el('div', 'stack-lg');
+
+  [1, 2].forEach(w => {
+    const sec = el('section');
+    sec.innerHTML = `<p class="sect-title">Semana ${w}${w === 2 ? ' · orden invertido' : ''}</p>`;
+    const st = el('div', 'stack');
+    CYCLE.filter(c => c.week === w).forEach(c => {
+      const d = DAYS[c.kind];
+      const isNow = CYCLE.indexOf(c) === S.idx % 6;
+      const card = el('button', 'card');
+      card.style.cssText = 'padding:15px;text-align:left;width:100%;display:block' + (isNow ? ';border-color:var(--leather)' : '');
+      card.innerHTML = `
+        <span class="slot" style="font-family:var(--f-mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:${isNow ? 'var(--leather)' : 'var(--chalk-mute)'}">
+          Día ${c.slot} · ${DOW[c.day]}${isNow ? ' · ahora' : ''}</span>
+        <strong style="display:block;font-size:19px;margin-top:4px;letter-spacing:-.015em">${esc(d.title)}</strong>
+        <span style="display:block;color:var(--chalk-dim);font-size:13.5px;margin-top:3px">${esc(d.items.map(i => EX[i.ex].tag).join(' · '))}</span>`;
+      card.onclick = () => go({ n: 'lista', kind: c.kind });
+      st.appendChild(card);
+    });
+    sec.appendChild(st);
+    body.appendChild(sec);
+  });
+
+  const notes = el('section');
+  notes.innerHTML = `<p class="sect-title">Progresión</p>`;
+  const ul = el('ul', 'cues');
+  [
+    'Sube carga cuando cierres el tope de repeticiones en todas las series con técnica correcta (RPE 7-8: te sobran 2-3 reps).',
+    'Repite el microciclo de 2 semanas durante 4-6 ciclos (8-12 semanas) antes de reevaluar volumen e intensidad.',
+    'El sábado es el mejor día para apretar: el domingo descansas entero antes del lunes en pista.',
+    'Si llegas con las piernas muy cargadas antes de un partido, recorta volumen de box jump y deja la fuerza base intacta.'
+  ].forEach((c, i) => ul.appendChild(el('li', '', `<b>${String(i + 1).padStart(2, '0')}</b><span>${esc(c)}</span>`)));
+  notes.appendChild(ul);
+  body.appendChild(notes);
+  s.appendChild(body);
+}
+
+/* ---------- LISTA DE EJERCICIOS ---------- */
+function vLista(s, v) {
+  const kinds = v.kind ? [v.kind] : ['inferior', 'core', 'superior'];
+  header(s, 'Biblioteca', v.kind ? DAYS[v.kind].title : 'Ejercicios',
+    v.kind ? DAYS[v.kind].subtitle : 'Los 19 movimientos del programa, cada uno con su muestra animada.', !!v.kind);
+  const body = el('div', 'stack-lg');
+  kinds.forEach(k => {
+    const sec = el('section');
+    if (!v.kind) sec.innerHTML = `<p class="sect-title">${esc(DAYS[k].title)}</p>`;
+    const st = el('div', 'stack');
+    DAYS[k].items.forEach(it => st.appendChild(exRow(it, null)));
+    sec.appendChild(st);
+    body.appendChild(sec);
+  });
+  s.appendChild(body);
+}
+
+/* ---------- PROGRESO ---------- */
+function vProg(s) {
+  header(s, 'Progreso', '¿Estoy mejorando?', 'Tus marcas frente a los ciclos anteriores.');
+  const body = el('div', 'stack-lg');
+
+  /* KPIs */
+  const k = el('div', 'kpis');
+  const sess = S.log.length;
+  const totalVol = S.log.reduce((v, s2) => v + Object.values(s2.sets).reduce((a, arr) => a + volume(arr), 0), 0);
+  const jump = S.jump.length ? S.jump[S.jump.length - 1] : null;
+  const jumpPrev = S.jump.length > 1 ? S.jump[S.jump.length - 2] : null;
+  const bw = S.body.length ? S.body[S.body.length - 1] : null;
+  const bwPrev = S.body.length > 1 ? S.body[S.body.length - 2] : null;
+
+  k.appendChild(el('div', 'kpi', `<div class="k">Sesiones</div><div class="v">${sess}</div><div class="d">${S.cycles} ciclo${S.cycles === 1 ? '' : 's'} completo${S.cycles === 1 ? '' : 's'}</div>`));
+  k.appendChild(el('div', 'kpi', `<div class="k">Volumen total</div><div class="v">${totalVol >= 1000 ? nf(totalVol / 1000) : nf(totalVol)}<small>${totalVol >= 1000 ? 't' : 'kg'}</small></div><div class="d">peso × reps acumulado</div>`));
+  k.appendChild(el('div', 'kpi', `<div class="k">Salto (cajón)</div><div class="v">${jump ? nf(jump.cm) : '—'}<small>${jump ? 'cm' : ''}</small></div>
+    <div class="d${jump && jumpPrev && jump.cm > jumpPrev.cm ? ' up' : ''}">${jump && jumpPrev ? (jump.cm - jumpPrev.cm >= 0 ? '+' : '') + nf(jump.cm - jumpPrev.cm) + ' cm' : 'sin registro'}</div>`));
+  k.appendChild(el('div', 'kpi', `<div class="k">Peso corporal</div><div class="v">${bw ? nf(bw.kg) : '—'}<small>${bw ? 'kg' : ''}</small></div>
+    <div class="d">${bw && bwPrev ? (bw.kg - bwPrev.kg >= 0 ? '+' : '') + nf(bw.kg - bwPrev.kg) + ' kg' : 'sin registro'}</div>`));
+  body.appendChild(k);
+
+  /* medidas */
+  const med = el('section');
+  med.innerHTML = `<p class="sect-title">Anotar marca</p>`;
+  const mrow = el('div', 'stack');
+  mrow.appendChild(measure('Salto: altura de cajón', 'cm', v => { S.jump.push({ date: today(), cm: v }); save(); render(); }));
+  mrow.appendChild(measure('Peso corporal', 'kg', v => { S.body.push({ date: today(), kg: v }); save(); render(); }));
+  med.appendChild(mrow);
+  if (S.jump.length > 1) med.appendChild(simpleChart('Altura de cajón', S.jump.map(x => ({ d: x.date, v: x.cm })), 'cm'));
+  if (S.body.length > 1) med.appendChild(simpleChart('Peso corporal', S.body.map(x => ({ d: x.date, v: x.kg })), 'kg'));
+  body.appendChild(med);
+
+  /* récords */
+  const withData = Object.keys(EX).filter(id => allSets(id).length);
+  if (!withData.length) {
+    body.appendChild(el('div', 'empty', 'Aún no hay nada que medir.<br>Cierra tu primera sesión y aquí empezarán a salir las curvas.'));
+  } else {
+    const pr = el('section');
+    pr.innerHTML = `<p class="sect-title">Récords personales</p>`;
+    const st = el('div', 'stack');
+    withData.forEach(id => {
+      const b = prOf(id), e = EX[id];
+      if (!b) return;
+      const one = e.log === 'weight' && b.w > 0 ? e1rm(b.w, b.r) : 0;
+      st.appendChild(el('div', 'pr', `
+        <span class="nm">${esc(e.tag)}${one ? `<br><span class="dt">1RM estimado ${one} kg</span>` : ''}</span>
+        <span style="text-align:right"><span class="val">${esc(fmtSet(b, e.log))}</span><br><span class="dt">${esc(fmtDate(b.date))}</span></span>`));
+    });
+    pr.appendChild(st);
+    body.appendChild(pr);
+
+    const ch = el('section');
+    ch.innerHTML = `<p class="sect-title">Curvas por ejercicio</p>`;
+    const cs = el('div', 'stack');
+    withData.forEach(id => { const h = allSets(id); if (h.length > 1) cs.appendChild(chartCard(EX[id], h)); });
+    ch.appendChild(cs);
+    if (cs.children.length) body.appendChild(ch);
+  }
+
+  s.appendChild(body);
+}
+
+function measure(label, unit, onAdd) {
+  const r = el('div', 'row');
+  r.innerHTML = `<span class="lb">${esc(label)}</span>`;
+  const f = el('span', 'fld');
+  f.style.width = '92px';
+  f.innerHTML = `<label>${unit}</label><input inputmode="decimal" placeholder="—">`;
+  const b = el('button', 'btn btn-sm');
+  b.textContent = 'Añadir';
+  b.onclick = () => { const v = num(f.querySelector('input').value); if (v == null) { toast('Escribe un número primero.'); return; } onAdd(v); };
+  r.appendChild(f); r.appendChild(b);
+  return r;
+}
+
+/* ---------- gráficas ---------- */
+function chartCard(e, hist) {
+  const pts = hist.map(h => { const b = bestOf(h.sets); return { d: h.date, v: e.log === 'time' || e.log === 'steps' ? b.r : (b.w || b.r) }; });
+  const unit = UNIT[e.log];
+  return simpleChart(e.tag, pts, unit);
+}
+
+function simpleChart(title, pts, unit) {
+  const c = el('div', 'chart');
+  const last = pts[pts.length - 1].v, first = pts[0].v;
+  const diff = last - first;
+  c.innerHTML = `<div class="top"><strong>${esc(title)}</strong><span>${nf(last)} ${unit}${pts.length > 1 && diff !== 0 ? ` <span style="color:var(--chalk-mute);font-size:12px">(${diff > 0 ? '+' : ''}${nf(diff)})</span>` : ''}</span></div><canvas></canvas>`;
+  const cv = c.querySelector('canvas');
+  requestAnimationFrame(() => drawChart(cv, pts, unit));
+  return c;
+}
+
+function drawChart(cv, pts, unit) {
+  const dpr = Math.min(devicePixelRatio || 1, 3);
+  const r = cv.getBoundingClientRect();
+  const w = Math.max(r.width, 200), h = 148;
+  cv.width = w * dpr; cv.height = h * dpr;
+  const x = cv.getContext('2d'); x.scale(dpr, dpr);
+
+  const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
+  const chalk = g('--chalk'), mute = g('--chalk-mute'), hair = g('--hair-soft'), leather = g('--leather');
+
+  const padL = 6, padR = 34, padT = 12, padB = 20;
+  const vals = pts.map(p => p.v);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (hi === lo) { hi = lo + 1; lo = Math.max(0, lo - 1); }
+  const pad = (hi - lo) * 0.18; lo -= pad; hi += pad;
+  const X = i => padL + (i / Math.max(1, pts.length - 1)) * (w - padL - padR);
+  const Y = v => padT + (1 - (v - lo) / (hi - lo)) * (h - padT - padB);
+
+  /* rejilla */
+  x.strokeStyle = hair; x.lineWidth = 1;
+  for (let i = 0; i <= 2; i++) {
+    const yy = padT + (i / 2) * (h - padT - padB);
+    x.beginPath(); x.moveTo(padL, yy); x.lineTo(w - padR, yy); x.stroke();
+  }
+  x.fillStyle = mute; x.font = `10px ${g('--f-mono') || 'monospace'}`; x.textAlign = 'left';
+  x.fillText(String(+hi.toFixed(0)), w - padR + 6, padT + 4);
+  x.fillText(String(+lo.toFixed(0)), w - padR + 6, h - padB + 4);
+
+  /* área */
+  const grad = x.createLinearGradient(0, padT, 0, h - padB);
+  grad.addColorStop(0, leather + '38'); grad.addColorStop(1, leather + '00');
+  x.beginPath();
+  pts.forEach((p, i) => i ? x.lineTo(X(i), Y(p.v)) : x.moveTo(X(i), Y(p.v)));
+  x.lineTo(X(pts.length - 1), h - padB); x.lineTo(X(0), h - padB); x.closePath();
+  x.fillStyle = grad; x.fill();
+
+  /* línea */
+  x.beginPath();
+  pts.forEach((p, i) => i ? x.lineTo(X(i), Y(p.v)) : x.moveTo(X(i), Y(p.v)));
+  x.strokeStyle = leather; x.lineWidth = 2.2; x.lineJoin = 'round'; x.lineCap = 'round'; x.stroke();
+
+  /* puntos */
+  pts.forEach((p, i) => {
+    const isLast = i === pts.length - 1;
+    x.beginPath(); x.arc(X(i), Y(p.v), isLast ? 4.6 : 2.6, 0, 7);
+    x.fillStyle = isLast ? leather : hair; x.fill();
+    if (isLast) { x.lineWidth = 2.4; x.strokeStyle = g('--panel'); x.stroke(); }
+  });
+
+  /* fechas extremas */
+  x.fillStyle = mute; x.font = `10px ${g('--f-mono') || 'monospace'}`;
+  x.textAlign = 'left'; x.fillText(fmtDate(pts[0].d), padL, h - 5);
+  x.textAlign = 'right'; x.fillText(fmtDate(pts[pts.length - 1].d), w - padR, h - 5);
+}
+
+/* ---------- AJUSTES ---------- */
+function vAjustes(s) {
+  header(s, 'Ajustes', 'Tu app', 'Todo lo que anotas vive solo en este iPhone.');
+  const body = el('div', 'stack-lg');
+
+  const look = el('section');
+  look.innerHTML = `<p class="sect-title">Aspecto</p>`;
+  const chips = el('div', 'chips');
+  [['auto', 'Automático'], ['dark', 'Pista'], ['light', 'Parqué']].forEach(([k, l]) => {
+    const b = el('button', 'chip', l);
+    b.setAttribute('aria-pressed', S.theme === k);
+    b.onclick = () => { S.theme = k; save(); applyTheme(); render(); };
+    chips.appendChild(b);
+  });
+  look.appendChild(chips);
+  body.appendChild(look);
+
+  const snd = el('section');
+  snd.innerHTML = `<p class="sect-title">Descanso</p>`;
+  const row = el('div', 'row');
+  row.innerHTML = `<span class="lb">Aviso sonoro al terminar</span>`;
+  const sb = el('button', 'chip', S.sound ? 'Activado' : 'Silencio');
+  sb.setAttribute('aria-pressed', S.sound);
+  sb.onclick = () => { S.sound = !S.sound; save(); if (S.sound) beep(1); render(); };
+  row.appendChild(sb);
+  snd.appendChild(row);
+  snd.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">iOS no deja que una app web haga vibrar el móvil, así que el aviso es un pitido. Súbele el volumen si el gimnasio está ruidoso.</span>`));
+  body.appendChild(snd);
+
+  const cyc = el('section');
+  cyc.innerHTML = `<p class="sect-title">Punto del ciclo</p>`;
+  const c = cur();
+  const cr = el('div', 'row');
+  cr.innerHTML = `<span class="lb">Siguiente<br><span style="color:var(--chalk-mute);font-size:13px">Semana ${c.week} · Día ${c.slot} · ${DAYS[c.kind].title}</span></span>`;
+  const cb = el('button', 'chip', 'Saltar');
+  cb.onclick = () => { S.idx++; if (S.idx % 6 === 0) S.cycles++; save(); render(); toast('Sesión saltada.'); };
+  cr.appendChild(cb);
+  cyc.appendChild(cr);
+  body.appendChild(cyc);
+
+  const dat = el('section');
+  dat.innerHTML = `<p class="sect-title">Copia de seguridad</p>`;
+  const ta = el('textarea');
+  ta.readOnly = true;
+  ta.value = JSON.stringify(S);
+  ta.style.cssText = 'width:100%;height:86px;border-radius:12px;border:1px solid var(--hair);background:var(--panel);color:var(--chalk-mute);padding:10px;font-family:var(--f-mono);font-size:11px;resize:none';
+  const btns = el('div', 'chips');
+  const cp = el('button', 'btn btn-ghost btn-sm', 'Copiar mis datos');
+  cp.onclick = async () => {
+    try { await navigator.clipboard.writeText(ta.value); toast('Copiado. Pégalo en Notas y lo tienes a salvo.'); }
+    catch (e) { ta.select(); toast('Selecciona el texto y cópialo a mano.'); }
+  };
+  const imp = el('button', 'btn btn-ghost btn-sm', 'Restaurar desde copia');
+  imp.onclick = () => {
+    const t = prompt('Pega aquí la copia de seguridad:');
+    if (!t) return;
+    try {
+      const o = JSON.parse(t);
+      if (!o || typeof o !== 'object' || !Array.isArray(o.log)) throw 0;
+      S = Object.assign(structuredClone(DEF), o); save(); applyTheme(); tab('hoy');
+      toast('Datos restaurados.');
+    } catch (e) { toast('Esa copia no es válida. No se ha tocado nada.'); }
+  };
+  btns.appendChild(cp); btns.appendChild(imp);
+  dat.appendChild(ta); dat.appendChild(btns);
+  dat.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">Si borras la app de la pantalla de inicio o limpias los datos de Safari, se va el historial. Copia esto de vez en cuando.</span>`));
+  body.appendChild(dat);
+
+  const dz = el('section');
+  dz.innerHTML = `<p class="sect-title">Zona peligrosa</p>`;
+  const rb = el('button', 'btn btn-ghost', 'Borrar todo el historial');
+  rb.style.color = 'var(--leather)';
+  rb.onclick = () => {
+    if (!confirm('Esto borra todas tus sesiones, marcas y récords. No se puede deshacer. ¿Seguro?')) return;
+    if (!confirm('Última confirmación: se pierde todo.')) return;
+    S = structuredClone(DEF); save(); applyTheme(); tab('hoy'); toast('Historial borrado.');
+  };
+  dz.appendChild(rb);
+  body.appendChild(dz);
+
+  body.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:10.5px;color:var(--chalk-mute);display:block;text-align:center;padding:8px 0 4px">VERTICAL · programa de fuerza para baloncesto</span>`));
+  s.appendChild(body);
+}
+
+/* ============ tabs ============ */
+const TABS = [
+  ['hoy', 'Hoy', '<path d="M4 20V9.5L12 3l8 6.5V20a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>'],
+  ['plan', 'Plan', '<rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M8.5 3v3M15.5 3v3M8 14h3M8 17.5h6"/>'],
+  ['lista', 'Ejercicios', '<path d="M6.5 9v6M17.5 9v6M3.5 10.5v3M20.5 10.5v3M6.5 12h11"/>'],
+  ['prog', 'Progreso', '<path d="M4 19V5M4 19h16M7.5 15.5l3.5-4 3 2.5 5-6.5"/>'],
+  ['ajustes', 'Ajustes', '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2 2M7.3 16.7l-2 2M18.7 18.7l-2-2M7.3 7.3l-2-2"/>']
+];
+function paintTabs(active) {
+  const bar = $('.tabbar');
+  if (!bar.children.length) {
+    TABS.forEach(([k, l, p]) => {
+      const b = el('button', '', `<svg viewBox="0 0 24 24">${p}</svg><span>${l}</span>`);
+      b.onclick = () => { if (here().n !== k) tab(k); };
+      b.dataset.k = k;
+      bar.appendChild(b);
+    });
+  }
+  /* La pestaña marcada es la raíz de la pila, no la pantalla actual. */
+  const rootTab = stack[0].n === 'sesion' ? 'hoy' : stack[0].n;
+  [...bar.children].forEach(b => b.setAttribute('aria-current', b.dataset.k === rootTab));
+}
+
+/* ============ tema ============ */
+function applyTheme() {
+  const r = document.documentElement;
+  if (S.theme === 'auto') r.removeAttribute('data-theme');
+  else r.setAttribute('data-theme', S.theme);
+  const dark = S.theme === 'dark' || (S.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  const m = $('meta[name="theme-color"]');
+  if (m) m.setAttribute('content', dark ? '#131110' : '#F0E3CB');
+}
+
+/* Deja la cabecera lista para "Añadir a pantalla de inicio", venga de donde venga
+   la página. Safari lee estas etiquetas al instalar, no solo al cargar. */
+function installMeta() {
+  const head = document.head;
+  const set = (sel, tag, attrs) => {
+    let n = head.querySelector(sel);
+    if (!n) { n = document.createElement(tag); head.appendChild(n); }
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+  };
+  set('meta[name="viewport"]', 'meta', { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' });
+  set('meta[name="apple-mobile-web-app-capable"]', 'meta', { name: 'apple-mobile-web-app-capable', content: 'yes' });
+  set('meta[name="mobile-web-app-capable"]', 'meta', { name: 'mobile-web-app-capable', content: 'yes' });
+  set('meta[name="apple-mobile-web-app-status-bar-style"]', 'meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' });
+  set('meta[name="apple-mobile-web-app-title"]', 'meta', { name: 'apple-mobile-web-app-title', content: 'VERTICAL' });
+  set('meta[name="theme-color"]', 'meta', { name: 'theme-color', content: '#131110' });
+  if (window.VERTICAL_ICON) {
+    set('link[rel="apple-touch-icon"]', 'link', { rel: 'apple-touch-icon', href: window.VERTICAL_ICON });
+    set('link[rel="icon"]', 'link', { rel: 'icon', type: 'image/png', href: window.VERTICAL_ICON });
+  }
+  document.title = 'VERTICAL';
+}
+
+/* Si la app se sirve desde un origen HTTPS propio, registra el service worker:
+   es lo que la deja instalada de verdad y funcionando sin cobertura. */
+function installOffline() {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+  navigator.serviceWorker.register('./sw.js').catch(() => { /* sin sw, la app sigue igual */ });
+}
+
+/* ============ arranque ============ */
+function boot() {
+  installMeta();
+  installOffline();
+  applyTheme();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+  $('#rest-skip').onclick = stopRest;
+  $('#rest-add').onclick = () => { R.left += 30; R.total = Math.max(R.total, R.left); paintRest(); };
+  if (S.active) stack = [{ n: 'hoy' }];
+  render();
+}
+
+</script>
+<script>boot();</script>
+</body>
+</html>
