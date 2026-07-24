@@ -471,9 +471,10 @@ const EX = {
     ]
   },
   puente_uni: {
-    name: 'Puente de glúteo unilateral',
-    tag: 'Puente unilateral', group: 'inferior', log: 'bw', anim: 'glutebridge', perSide: true,
-    transfer: 'Extensión de cadera explosiva pierna a pierna: el despegue del salto a una pierna, el de la entrada a canasta.',
+    name: 'Puente de glúteo a una pierna',
+    alias: 'Elevación de cadera unilateral',
+    tag: 'Puente a una pierna', group: 'inferior', log: 'bw', anim: 'glutebridge', perSide: true,
+    transfer: 'Extensión de cadera unilateral: despegue de salto y estabilidad al recibir en un solo apoyo.',
     cues: [
       'Boca arriba, un pie plantado cerca del glúteo y la otra pierna estirada al frente.',
       'Empuja con el talón, no con la punta del pie.',
@@ -1545,7 +1546,8 @@ function finish() {
 function vEx(s, v) {
   const e = EX[v.ex], it = v.item;
   const live = v.live && S.active;
-  header(s, ({ inferior: 'Tren inferior', core: 'Core', superior: 'Tren superior' })[e.group], e.name, null, true);
+  header(s, ({ inferior: 'Tren inferior', core: 'Core', superior: 'Tren superior' })[e.group],
+    e.name, e.alias ? 'También llamado ' + e.alias.toLowerCase() : null, true);
 
   const body = el('div', 'stack-lg');
 
