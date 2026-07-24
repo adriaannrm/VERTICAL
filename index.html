@@ -470,16 +470,16 @@ const EX = {
       'Espalda plana de principio a fin; el pecho no se hunde.'
     ]
   },
-  hipthrust: {
-    name: 'Hip thrust con barra',
-    tag: 'Hip thrust', group: 'inferior', log: 'weight', anim: 'hipthrust',
-    transfer: 'Extensión de cadera explosiva: despegue del salto vertical.',
+  puente_uni: {
+    name: 'Puente de glúteo unilateral',
+    tag: 'Puente unilateral', group: 'inferior', log: 'bw', anim: 'glutebridge', perSide: true,
+    transfer: 'Extensión de cadera explosiva pierna a pierna: el despegue del salto a una pierna, el de la entrada a canasta.',
     cues: [
-      'Borde del banco justo bajo las escápulas.',
-      'Espinillas verticales arriba: ajusta la distancia de los pies.',
-      'Barbilla metida y mirada al frente; evita hiperextender la lumbar.',
-      'Arriba, aprieta el glúteo un segundo y bloquea la cadera.',
-      'Sube rápido, baja controlado.'
+      'Boca arriba, un pie plantado cerca del glúteo y la otra pierna estirada al frente.',
+      'Empuja con el talón, no con la punta del pie.',
+      'Sube hasta alinear hombro, cadera y rodilla. Ni un grado más: la lumbar no se arquea.',
+      'Las dos caderas suben a la vez, sin que un lado se quede atrás. Ahí está el ejercicio.',
+      'Aprieta el glúteo arriba un segundo y baja controlado, sin descansar abajo entre reps.'
     ]
   },
   boxjump: {
@@ -679,7 +679,7 @@ const DAYS = {
       { ex: 'sentadilla', sets: 4, reps: '5-6', rest: 150 },
       { ex: 'bulgara', sets: 3, reps: '6-8/pierna', rest: 90 },
       { ex: 'rdl', sets: 3, reps: '6-8', rest: 120 },
-      { ex: 'hipthrust', sets: 3, reps: '8-10', rest: 90 },
+      { ex: 'puente_uni', sets: 3, reps: '8-10/pierna', rest: 90 },
       { ex: 'boxjump', sets: 4, reps: '3-4', rest: 120 },
       { ex: 'lateral', sets: 3, reps: '10 pasos/lado', rest: 60 },
       { ex: 'nordic', sets: 3, reps: '4-6', rest: 90 }
@@ -888,21 +888,24 @@ const ANIM = (() => {
     post: (c, p, t, S) => barbell(c, (p.h1[0] + p.h2[0]) / 2, (p.h1[1] + p.h2[1]) / 2 + 3, S)
   };
 
-  /* --- HIP THRUST --- */
-  const htDown = {
-    hd: [72, 104], nk: [86, 108], hp: [120, 134],
-    e1: [98, 118], h1: [104, 132], e2: [96, 116], h2: [102, 130],
-    k1: [152, 120], a1: [154, 150], k2: [150, 120], a2: [150, 150]
+  /* --- PUENTE DE GLÚTEO UNILATERAL ---
+     En el suelo. Hombros y brazos apoyados, un pie plantado y la otra pierna
+     estirada, que sube y baja siguiendo la línea del tronco. */
+  const gbDown = {
+    hd: [54, 140], nk: [72, 142], hp: [116, 144],
+    e1: [86, 149], h1: [102, 151], e2: [84, 147], h2: [100, 149],
+    k1: [150, 127], a1: [157, 150], k2: [146, 133], a2: [176, 125]
   };
-  const htUp = {
-    hd: [70, 92], nk: [84, 98], hp: [122, 110],
-    e1: [98, 104], h1: [108, 112], e2: [96, 102], h2: [106, 110],
-    k1: [152, 116], a1: [154, 150], k2: [150, 116], a2: [150, 150]
+  /* Arriba, hombro-cadera-rodilla forman una línea recta (−14°). Ni un grado
+     más: si la cadera subiera más, el dibujo estaría enseñando justo la
+     hiperextensión lumbar que advierte la clave de técnica. */
+  const gbUp = {
+    hd: [54, 138], nk: [72, 140], hp: [118, 128],
+    e1: [86, 149], h1: [102, 151], e2: [84, 147], h2: [100, 149],
+    k1: [151, 120], a1: [157, 150], k2: [150, 118], a2: [181, 108]
   };
-  EXR.hipthrust = {
-    dur: 2800, keys: [[0, htDown], [.4, htUp], [.6, htUp], [.9, htDown], [1, htDown]],
-    pre: (c, p, t, S) => bench(c, 62, 112, 44, S),
-    post: (c, p, t, S) => barbell(c, p.hp[0], p.hp[1] - 2, S)
+  EXR.glutebridge = {
+    dur: 2800, keys: [[0, gbDown], [.32, gbUp], [.56, gbUp], [.9, gbDown], [1, gbDown]]
   };
 
   /* --- BOX JUMP --- */
