@@ -105,8 +105,15 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* Altura en unidades de viewport dinamico, no en porcentajes.
+   Con height:100% iOS resuelve el alto contra la ventana de maquetacion, que en
+   una app instalada no coincide con la pantalla real cuando la pagina no llega
+   a hacer scroll. Resultado: la barra de pestañas, que va anclada con
+   bottom:0, se quedaba flotando con un hueco debajo en las pantallas cortas. */
 html, body {
-  margin: 0; height: 100%;
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
   overscroll-behavior-y: none;
 }
 
@@ -125,7 +132,13 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--leather); outline-offset: 2px; border-radius: 6px; }
 
 /* ---------- shell ---------- */
-#app { min-height: 100%; display: flex; flex-direction: column; }
+/* El shell llena siempre la pantalla, tenga la pestaña mucho contenido o poco,
+   para que todas se comporten igual. */
+#app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex; flex-direction: column;
+}
 
 .screen {
   flex: 1;
