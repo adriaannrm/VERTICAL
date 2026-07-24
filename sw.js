@@ -4,7 +4,13 @@
 
    Para forzar una actualización tras cambiar la app, sube CACHE una versión. */
 
-const CACHE = 'vertical-v2';
+const CACHE = 'vertical-v3';
+
+/* Peticion que salta la cache HTTP del navegador.
+   GitHub Pages sirve con 10 min de cache, asi que sin esto el refresco pedia el
+   fichero y el navegador le devolvia el viejo que ya tenia guardado: la app se
+   refrescaba consigo misma y las actualizaciones no llegaban nunca. */
+const fresco = url => fetch(new Request(url, { cache: 'reload', credentials: 'same-origin' }));
 const ASSETS = [
   './',
   './index.html',
@@ -24,7 +30,9 @@ self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil((async () => {
     const c = await caches.open(CACHE);
-    await Promise.all(ASSETS.map(a => c.add(a).catch(() => { })));
+    await Promise.all(ASSETS.map(a =>
+      fresco(a).then(res => res.ok ? c.put(a, res) : null).catch(() => { })
+    ));
   })());
 });
 
@@ -50,7 +58,7 @@ self.addEventListener('fetch', e => {
 
     const hit = await caches.match(req);
     if (hit) {
-      fetch(req).then(guardar).catch(() => { });   // refresco silencioso
+      fresco(req.url).then(guardar).catch(() => { });   // refresco silencioso, sin caché HTTP
       return hit;
     }
     try {
