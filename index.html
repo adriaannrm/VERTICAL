@@ -412,6 +412,43 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 .row .lb { flex: 1; font-size: 15px; }
 .row .rb { font-family: var(--f-num); font-size: 15px; font-weight: 600; color: var(--chalk-mute); }
 
+/* ---------- el color de la música ----------
+   El tono lo inyecta spotify.js sobre --leather, --leather-soft y --ambiente.
+   El fondo y los textos no se tocan nunca: el contraste no depende del disco. */
+/* Sin transiciones aquí, a propósito. Cuando una propiedad tiene transición y
+   su valor sale de una variable, el navegador no la reevalúa al cambiar la
+   variable: se queda pintando el valor viejo. Costó encontrarlo, porque la
+   variable sí cambiaba y solo fallaba lo que se veía.
+
+   La transparencia va dentro del propio degradado: sin --ambiente el color es
+   "transparent" y la capa desaparece sola, sin depender de la opacidad. */
+.ambiente {
+  position: fixed; inset: 0 0 auto 0; height: 46vh; z-index: -1;
+  pointer-events: none; opacity: 1;
+  background: radial-gradient(120% 90% at 50% 0%,
+    color-mix(in srgb, var(--ambiente, transparent) 26%, transparent) 0%,
+    transparent 68%);
+}
+
+/* Lo que suena, dentro de la barra de descanso */
+.rest .pista {
+  position: relative; display: flex; align-items: center; gap: 8px;
+  min-width: 0; max-width: 46%;
+}
+.rest .pista img {
+  width: 30px; height: 30px; border-radius: 5px; flex: 0 0 auto;
+  object-fit: cover; background: var(--panel);
+}
+.rest .pista span {
+  min-width: 0; font-size: 11.5px; line-height: 1.25; color: var(--chalk-dim);
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+
+.mono-hint {
+  font-family: var(--f-mono); font-size: 11px; color: var(--chalk-mute);
+  line-height: 1.5; word-break: break-all;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
@@ -419,6 +456,8 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 </style>
 </head>
 <body>
+
+<div class="ambiente" aria-hidden="true"></div>
 
 <div id="app">
   <nav class="tabbar" aria-label="Secciones"></nav>
@@ -432,6 +471,7 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
       <span class="lbl">Descanso</span>
       <span class="t" id="rest-t">0s</span>
     </span>
+    <span class="pista" id="rest-pista" hidden></span>
     <span class="acts">
       <button class="btn btn-ghost btn-sm" id="rest-add">+30s</button>
       <button class="btn btn-sm" id="rest-skip">Listo</button>
@@ -1220,6 +1260,231 @@ const ANIM = (() => {
 })();
 
 
+/* VERTICAL — el color de la app sigue a lo que suena en Spotify.
+   Flujo OAuth con PKCE: el inicio de sesión ocurre en la página de Spotify y
+   esta app solo recibe un permiso temporal. Aquí nunca hay contraseñas.
+   El Client ID es público por diseño en PKCE; no hay ningún secreto guardado. */
+
+const SPOT = (() => {
+  const K = 'vertical.spotify';
+  const SCOPE = 'user-read-currently-playing';
+  const POLL = 6000;
+  /* Debe coincidir exactamente con la URI registrada en el panel de Spotify. */
+  const REDIRECT = location.origin + location.pathname;
+
+  let st = cargar();
+  let iv = null, ultimaPortada = null, alEscuchar = null;
+
+  /* Client ID de la app registrada en el panel de Spotify. Es público por diseño
+     en PKCE (no es un secreto): va aquí para que la app venga ya configurada. */
+  const CLIENT_ID = '0cdb08bef0024c469f548081ee7af11d';
+
+  function cargar() {
+    const base = { clientId: CLIENT_ID, token: '', refresh: '', exp: 0, on: true };
+    try {
+      const g = Object.assign({}, base, JSON.parse(localStorage.getItem(K) || '{}'));
+      if (!g.clientId) g.clientId = CLIENT_ID;   // no dejar que un guardado viejo con '' lo borre
+      return g;
+    }
+    catch (e) { return base; }
+  }
+  function guardar() { try { localStorage.setItem(K, JSON.stringify(st)); } catch (e) { } }
+
+  /* ---------- PKCE ---------- */
+  const b64url = buf => btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const aleatorio = n => { const a = new Uint8Array(n); crypto.getRandomValues(a); return b64url(a); };
+  const sha256 = s => crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+
+  async function conectar() {
+    if (!st.clientId) throw new Error('Falta el Client ID');
+    const verificador = aleatorio(48);
+    sessionStorage.setItem(K + '.v', verificador);
+    localStorage.setItem(K + '.v', verificador);   // sessionStorage se pierde al volver de Spotify
+    const reto = b64url(await sha256(verificador));
+    const u = new URL('https://accounts.spotify.com/authorize');
+    u.search = new URLSearchParams({
+      client_id: st.clientId, response_type: 'code', redirect_uri: REDIRECT,
+      scope: SCOPE, code_challenge_method: 'S256', code_challenge: reto
+    }).toString();
+    location.href = u.toString();
+  }
+
+  /* Al volver de Spotify la URL trae ?code=... Se canjea por el permiso. */
+  async function volviendoDeSpotify() {
+    const p = new URLSearchParams(location.search);
+    const code = p.get('code'), err = p.get('error');
+    if (!code && !err) return null;
+    history.replaceState({}, '', REDIRECT);        // deja la URL limpia
+    if (err) return { ok: false, msg: err === 'access_denied' ? 'Has cancelado la conexión con Spotify.' : 'Spotify ha rechazado la conexión.' };
+
+    const verificador = localStorage.getItem(K + '.v') || sessionStorage.getItem(K + '.v');
+    if (!verificador) return { ok: false, msg: 'Se perdió la sesión de conexión. Inténtalo otra vez.' };
+    try {
+      const r = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code', code, redirect_uri: REDIRECT,
+          client_id: st.clientId, code_verifier: verificador
+        })
+      });
+      const j = await r.json();
+      if (!r.ok) return { ok: false, msg: j.error_description || 'No se pudo completar la conexión.' };
+      aplicarToken(j);
+      localStorage.removeItem(K + '.v');
+      return { ok: true };
+    } catch (e) { return { ok: false, msg: 'Sin conexión con Spotify.' }; }
+  }
+
+  function aplicarToken(j) {
+    st.token = j.access_token;
+    if (j.refresh_token) st.refresh = j.refresh_token;
+    st.exp = Date.now() + (j.expires_in || 3600) * 1000 - 60000;   // un minuto de margen
+    guardar();
+  }
+
+  async function renovar() {
+    if (!st.refresh) return false;
+    try {
+      const r = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: st.refresh, client_id: st.clientId })
+      });
+      if (!r.ok) return false;
+      aplicarToken(await r.json());
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* ---------- qué suena ---------- */
+  async function sonando() {
+    if (!st.token) return null;
+    if (Date.now() > st.exp && !(await renovar())) return null;
+    try {
+      const r = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+        headers: { Authorization: 'Bearer ' + st.token }
+      });
+      if (r.status === 204) return { parado: true };            // nada sonando
+      if (r.status === 401) { return (await renovar()) ? sonando() : null; }
+      if (!r.ok) return null;
+      const j = await r.json();
+      if (!j || !j.item) return { parado: true };
+      const imgs = (j.item.album && j.item.album.images) || [];
+      const orden = [...imgs].sort((a, b) => a.width - b.width);
+      return {
+        parado: !j.is_playing,
+        titulo: j.item.name,
+        artista: (j.item.artists || []).map(a => a.name).join(', '),
+        portada: (orden.find(i => i.width >= 160) || orden[orden.length - 1] || {}).url || null
+      };
+    } catch (e) { return null; }
+  }
+
+  /* ---------- color ---------- */
+  const rgbAHsl = (r, g, b) => {
+    r /= 255; g /= 255; b /= 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    let h = 0;
+    if (d) {
+      if (mx === r) h = ((g - b) / d) % 6;
+      else if (mx === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h *= 60; if (h < 0) h += 360;
+    }
+    const l = (mx + mn) / 2;
+    const s = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
+    return [h, s, l];
+  };
+  const hsl = (h, s, l) => `hsl(${h.toFixed(0)} ${(s * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%)`;
+
+  /* Saca el tono más característico de la portada: el más colorido, evitando
+     los píxeles casi negros y casi blancos, que no dicen nada. */
+  async function tonoDe(url) {
+    return new Promise(res => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const N = 40;
+          const cv = document.createElement('canvas'); cv.width = N; cv.height = N;
+          const c = cv.getContext('2d', { willReadFrequently: true });
+          c.drawImage(img, 0, 0, N, N);
+          const d = c.getImageData(0, 0, N, N).data;
+          let mejor = null;
+          for (let i = 0; i < d.length; i += 4) {
+            const [h, s, l] = rgbAHsl(d[i], d[i + 1], d[i + 2]);
+            if (l < .12 || l > .93) continue;
+            const nota = s * (1 - Math.abs(l - .5));
+            if (!mejor || nota > mejor.nota) mejor = { nota, h, s, l };
+          }
+          res(mejor && mejor.s > .12 ? mejor.h : null);
+        } catch (e) { res(null); }
+      };
+      img.onerror = () => res(null);
+      img.src = url;
+    });
+  }
+
+  /* El tono viaja; la luminosidad y la saturación se quedan dentro de una banda
+     segura, para que el contraste con el fondo aguante con cualquier disco. */
+  function pintar(tono) {
+    const raiz = document.documentElement;
+    if (tono == null) { despintar(); return; }
+    const oscuro = matchMedia('(prefers-color-scheme: dark)').matches;
+    const tema = raiz.getAttribute('data-theme');
+    const esOscuro = tema === 'dark' || (tema !== 'light' && oscuro);
+
+    const s = esOscuro ? .78 : .72;
+    const l = esOscuro ? .56 : .38;
+    raiz.style.setProperty('--leather', hsl(tono, s, l));
+    raiz.style.setProperty('--leather-soft', hsl(tono, esOscuro ? .42 : .55, esOscuro ? .13 : .90));
+    raiz.style.setProperty('--ambiente', hsl(tono, esOscuro ? .55 : .60, esOscuro ? .40 : .62));
+    raiz.classList.add('con-musica');
+  }
+  function despintar() {
+    const raiz = document.documentElement;
+    raiz.style.removeProperty('--leather');
+    raiz.style.removeProperty('--leather-soft');
+    raiz.style.removeProperty('--ambiente');
+    raiz.classList.remove('con-musica');
+  }
+
+  /* ---------- bucle ---------- */
+  async function latido() {
+    if (!st.token || !st.on) return;
+    const p = await sonando();
+    if (!p || p.parado) { if (alEscuchar) alEscuchar(null); return; }
+    if (p.portada && p.portada !== ultimaPortada) {
+      ultimaPortada = p.portada;
+      pintar(await tonoDe(p.portada));
+    }
+    if (alEscuchar) alEscuchar(p);
+  }
+  function arrancar() {
+    parar();
+    if (!st.token || !st.on) return;
+    latido();
+    iv = setInterval(() => { if (document.visibilityState === 'visible') latido(); }, POLL);
+  }
+  function parar() { clearInterval(iv); iv = null; }
+
+  function desconectar() {
+    st.token = ''; st.refresh = ''; st.exp = 0; guardar();
+    parar(); despintar(); ultimaPortada = null;
+    if (alEscuchar) alEscuchar(null);
+  }
+
+  return {
+    get estado() { return { conectado: !!st.token, clientId: st.clientId, on: st.on, redirect: REDIRECT }; },
+    setClientId(v) { st.clientId = (v || '').trim(); guardar(); },
+    setActivo(v) { st.on = !!v; guardar(); if (v) arrancar(); else { parar(); despintar(); ultimaPortada = null; } },
+    onPista(fn) { alEscuchar = fn; },
+    conectar, desconectar, arrancar, parar, volviendoDeSpotify,
+    repintar() { ultimaPortada = null; latido(); }
+  };
+})();
+
+
 /* VERTICAL — estado, navegación y pantallas. */
 
 /* ============ estado ============ */
@@ -1893,7 +2158,7 @@ function vAjustes(s) {
   [['auto', 'Automático'], ['dark', 'Pista'], ['light', 'Parqué']].forEach(([k, l]) => {
     const b = el('button', 'chip', l);
     b.setAttribute('aria-pressed', S.theme === k);
-    b.onclick = () => { S.theme = k; save(); applyTheme(); render(); };
+    b.onclick = () => { S.theme = k; save(); applyTheme(); SPOT.repintar(); render(); };
     chips.appendChild(b);
   });
   look.appendChild(chips);
@@ -1910,6 +2175,71 @@ function vAjustes(s) {
   snd.appendChild(row);
   snd.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">iOS no deja que una app web haga vibrar el móvil, así que el aviso es un pitido. Súbele el volumen si el gimnasio está ruidoso.</span>`));
   body.appendChild(snd);
+
+  /* ---- Spotify ---- */
+  const sp = el('section');
+  sp.innerHTML = `<p class="sect-title">El color de la música</p>`;
+  const e = SPOT.estado;
+
+  if (!e.clientId) {
+    sp.appendChild(el('div', 'card', `<div style="padding:14px 15px;font-size:14.5px;line-height:1.5;color:var(--chalk-dim)">
+      Los colores de la app pueden seguir a la portada de lo que estés escuchando.
+      Necesita conectar tu Spotify una vez.<br><br>
+      <b style="color:var(--chalk)">1.</b> Entra en el panel de desarrollador de Spotify y crea una app (es gratis).<br>
+      <b style="color:var(--chalk)">2.</b> En <i>Redirect URI</i> pega exactamente esto:</div>`));
+    const uri = el('div', 'card');
+    uri.style.cssText = 'padding:11px 13px;margin-top:8px';
+    uri.innerHTML = `<div class="mono-hint">${esc(e.redirect)}</div>`;
+    const cp = el('button', 'btn btn-ghost btn-sm', 'Copiar dirección');
+    cp.style.marginTop = '9px';
+    cp.onclick = async () => {
+      try { await navigator.clipboard.writeText(e.redirect); toast('Dirección copiada.'); }
+      catch (err) { toast('Cópiala a mano de la línea de arriba.'); }
+    };
+    uri.appendChild(cp);
+    sp.appendChild(uri);
+    sp.appendChild(el('p', '', `<span style="font-size:14.5px;color:var(--chalk-dim)"><b style="color:var(--chalk)">3.</b> Pega aquí el Client ID que te dé Spotify:</span>`));
+  }
+
+  const idRow = el('div', 'row');
+  idRow.innerHTML = `<span class="lb">Client ID</span>`;
+  const idF = el('span', 'fld');
+  idF.style.cssText = 'flex:1;max-width:170px';
+  idF.innerHTML = `<label>spotify</label><input placeholder="—" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(e.clientId)}">`;
+  const idInput = idF.querySelector('input');
+  idInput.style.fontSize = '12px';
+  idInput.oninput = () => SPOT.setClientId(idInput.value);
+  idRow.appendChild(idF);
+  sp.appendChild(idRow);
+
+  const accion = el('button', 'btn');
+  accion.style.marginTop = '10px';
+  if (e.conectado) {
+    accion.className = 'btn btn-ghost';
+    accion.textContent = 'Desconectar Spotify';
+    accion.onclick = () => { SPOT.desconectar(); render(); toast('Spotify desconectado.'); };
+  } else {
+    accion.textContent = 'Conectar Spotify';
+    accion.onclick = async () => {
+      if (!SPOT.estado.clientId) { toast('Pega antes el Client ID.'); return; }
+      try { await SPOT.conectar(); } catch (err) { toast('No se ha podido abrir Spotify.'); }
+    };
+  }
+  sp.appendChild(accion);
+
+  if (e.conectado) {
+    const onRow = el('div', 'row');
+    onRow.style.marginTop = '10px';
+    onRow.innerHTML = `<span class="lb">Teñir la app con la portada</span>`;
+    const ob = el('button', 'chip', e.on ? 'Activado' : 'Desactivado');
+    ob.setAttribute('aria-pressed', e.on);
+    ob.onclick = () => { SPOT.setActivo(!e.on); render(); };
+    onRow.appendChild(ob);
+    sp.appendChild(onRow);
+  }
+
+  sp.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">Inicias sesión en la página de Spotify, no aquí: esta app nunca ve tu contraseña. Solo cambia el color de acento y una veladura de fondo; el fondo y los textos no se tocan, para que se lea igual de bien con cualquier disco.</span>`));
+  body.appendChild(sp);
 
   const cyc = el('section');
   cyc.innerHTML = `<p class="sect-title">Punto del ciclo</p>`;
@@ -2029,16 +2359,37 @@ function installOffline() {
   navigator.serviceWorker.register('./sw.js').catch(() => { /* sin sw, la app sigue igual */ });
 }
 
+/* Lo que suena, dentro de la barra de descanso. */
+function pintarPista(p) {
+  const box = $('#rest-pista');
+  if (!box) return;
+  if (!p || !p.titulo) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.innerHTML = (p.portada ? `<img src="${esc(p.portada)}" alt="">` : '') +
+    `<span>${esc(p.titulo)}<br><span style="color:var(--chalk-mute)">${esc(p.artista || '')}</span></span>`;
+}
+
 /* ============ arranque ============ */
 function boot() {
   installMeta();
   installOffline();
   applyTheme();
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { applyTheme(); SPOT.repintar(); });
   $('#rest-skip').onclick = stopRest;
   $('#rest-add').onclick = () => { R.left += 30; R.total = Math.max(R.total, R.left); paintRest(); };
   if (S.active) stack = [{ n: 'hoy' }];
   render();
+
+  /* Spotify: recoger la vuelta del login y empezar a mirar qué suena. */
+  SPOT.onPista(pintarPista);
+  SPOT.volviendoDeSpotify().then(res => {
+    if (res && res.ok) { tab('ajustes'); toast('Spotify conectado.'); }
+    else if (res) { tab('ajustes'); toast(res.msg); }
+    SPOT.arrancar();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') SPOT.arrancar(); else SPOT.parar();
+  });
 }
 
 </script>
