@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>VERTICAL</title>
 <meta name="description" content="Programa de fuerza para baloncesto: rutinas, cargas y progreso.">
-<meta name="theme-color" content="#131110">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0B0B0D" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -22,85 +23,89 @@
    Claro   = parqué de arce con las mismas líneas de cal
    ============================================ */
 
+/* Paleta neutra moderna. Los nombres de token se mantienen (court/chalk/panel…)
+   para no tocar el resto del CSS ni app.js; solo cambian los valores.
+   Spotify sigue pisando --leather / --leather-soft / --ambiente en caliente. */
 :root {
-  --court: #F0E3CB;
-  --court-2: #E6D5B6;
-  --panel: #FBF5E9;
-  --panel-2: #FFFDF7;
-  --hair: #D8C4A0;
-  --hair-soft: #E7D8BC;
-  --chalk: #221A0F;
-  --chalk-dim: #6A5940;
-  --chalk-mute: #8E7C61;
-  --leather: #C24717;
-  --leather-soft: #F3DCCE;
-  --rim: #A66E0C;
-  --iron: #6B5D4C;
-  --gear: #C3AA80;
-  --shadow: 0 1px 2px rgba(60, 42, 14, .10), 0 6px 18px rgba(60, 42, 14, .07);
+  /* claro — fondo blanco, grises fríos */
+  --court: #FFFFFF;
+  --court-2: #F3F4F6;
+  --panel: #FFFFFF;
+  --panel-2: #F6F7F9;
+  --hair: #E4E5EA;
+  --hair-soft: #EDEEF2;
+  --chalk: #14151A;
+  --chalk-dim: #565961;
+  --chalk-mute: #8B8E98;
+  --leather: #E24D18;
+  --leather-soft: #FCEAE1;
+  --rim: #B45309;
+  --iron: #6B7280;
+  --gear: #CBD0D8;
+  --shadow: 0 1px 2px rgba(18, 20, 28, .05), 0 10px 30px rgba(18, 20, 28, .06);
 
-  --f-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --f-num: ui-rounded, "SF Pro Rounded", "Segoe UI Variable Display", -apple-system, system-ui, sans-serif;
+  --f-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  --f-num: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
   --f-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
 
-  --r: 16px;
+  --r: 18px;
   --gut: 16px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --court: #131110;
-    --court-2: #0C0B0A;
-    --panel: #1D1A17;
-    --panel-2: #262220;
-    --hair: #3A322B;
-    --hair-soft: #2C2622;
-    --chalk: #F5F0E6;
-    --chalk-dim: #A2977F;
-    --chalk-mute: #7E7364;
-    --leather: #EE6A2C;
-    --leather-soft: #3A2418;
-    --rim: #F0A340;
-    --iron: #9A8F7F;
-    --gear: #564B40;
-    --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 24px rgba(0, 0, 0, .35);
+    --court: #0B0B0D;
+    --court-2: #141417;
+    --panel: #161619;
+    --panel-2: #1F1F24;
+    --hair: #2B2B32;
+    --hair-soft: #212127;
+    --chalk: #F3F3F5;
+    --chalk-dim: #9A9CA5;
+    --chalk-mute: #6C6E78;
+    --leather: #FB6A32;
+    --leather-soft: #2A1A12;
+    --rim: #F59E42;
+    --iron: #8A8D96;
+    --gear: #3A3A42;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 10px 32px rgba(0, 0, 0, .42);
   }
 }
 
 :root[data-theme="dark"] {
-  --court: #131110;
-  --court-2: #0C0B0A;
-  --panel: #1D1A17;
-  --panel-2: #262220;
-  --hair: #3A322B;
-  --hair-soft: #2C2622;
-  --chalk: #F5F0E6;
-  --chalk-dim: #A2977F;
-  --chalk-mute: #7E7364;
-  --leather: #EE6A2C;
-  --leather-soft: #3A2418;
-  --rim: #F0A340;
-  --iron: #9A8F7F;
-  --gear: #564B40;
-  --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 24px rgba(0, 0, 0, .35);
+  --court: #0B0B0D;
+  --court-2: #141417;
+  --panel: #161619;
+  --panel-2: #1F1F24;
+  --hair: #2B2B32;
+  --hair-soft: #212127;
+  --chalk: #F3F3F5;
+  --chalk-dim: #9A9CA5;
+  --chalk-mute: #6C6E78;
+  --leather: #FB6A32;
+  --leather-soft: #2A1A12;
+  --rim: #F59E42;
+  --iron: #8A8D96;
+  --gear: #3A3A42;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 10px 32px rgba(0, 0, 0, .42);
 }
 
 :root[data-theme="light"] {
-  --court: #F0E3CB;
-  --court-2: #E6D5B6;
-  --panel: #FBF5E9;
-  --panel-2: #FFFDF7;
-  --hair: #D8C4A0;
-  --hair-soft: #E7D8BC;
-  --chalk: #221A0F;
-  --chalk-dim: #6A5940;
-  --chalk-mute: #8E7C61;
-  --leather: #C24717;
-  --leather-soft: #F3DCCE;
-  --rim: #A66E0C;
-  --iron: #6B5D4C;
-  --gear: #C3AA80;
-  --shadow: 0 1px 2px rgba(60, 42, 14, .10), 0 6px 18px rgba(60, 42, 14, .07);
+  --court: #FFFFFF;
+  --court-2: #F3F4F6;
+  --panel: #FFFFFF;
+  --panel-2: #F6F7F9;
+  --hair: #E4E5EA;
+  --hair-soft: #EDEEF2;
+  --chalk: #14151A;
+  --chalk-dim: #565961;
+  --chalk-mute: #8B8E98;
+  --leather: #E24D18;
+  --leather-soft: #FCEAE1;
+  --rim: #B45309;
+  --iron: #6B7280;
+  --gear: #CBD0D8;
+  --shadow: 0 1px 2px rgba(18, 20, 28, .05), 0 10px 30px rgba(18, 20, 28, .06);
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -122,7 +127,7 @@ body {
   color: var(--chalk);
   font-family: var(--f-ui);
   font-size: 16px;
-  line-height: 1.45;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
 }
@@ -162,7 +167,7 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
   opacity: .8;
 }
 .hdr h1 {
-  margin: 0; font-size: 30px; line-height: 1.1; letter-spacing: -.022em; font-weight: 700;
+  margin: 0; font-size: 33px; line-height: 1.08; letter-spacing: -.03em; font-weight: 720;
   text-wrap: balance;
 }
 .eyebrow {
@@ -214,14 +219,14 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
   font-family: var(--f-mono); font-size: 11px; letter-spacing: .13em;
   text-transform: uppercase; color: var(--leather);
 }
-.today h2 { margin: 0; font-size: 27px; letter-spacing: -.02em; line-height: 1.12; }
+.today h2 { margin: 0; font-size: 27px; letter-spacing: -.028em; line-height: 1.1; font-weight: 680; }
 .today .meta { display: flex; gap: 18px; color: var(--chalk-dim); font-size: 13.5px; }
 .today .meta b { font-family: var(--f-num); font-size: 17px; color: var(--chalk); font-weight: 600; }
 
 .btn {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 50px; padding: 0 20px; border-radius: 13px;
-  background: var(--leather); color: #FFF7F1;
+  background: var(--leather); color: #FFFFFF;
   font-weight: 600; font-size: 16.5px; letter-spacing: -.01em;
   transition: transform .12s ease, filter .12s ease;
 }
@@ -319,7 +324,7 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
   transition: background .14s ease, color .14s ease, border-color .14s ease;
 }
 .tick svg { width: 19px; height: 19px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.setrow.done .tick { background: var(--leather); border-color: var(--leather); color: #FFF7F1; }
+.setrow.done .tick { background: var(--leather); border-color: var(--leather); color: #FFFFFF; }
 .setrow.done .fld input { color: var(--chalk); border-color: color-mix(in srgb, var(--leather) 38%, transparent); }
 
 .hint {
