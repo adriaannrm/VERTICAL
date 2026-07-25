@@ -1272,12 +1272,13 @@ const SPOT = (() => {
   /* Debe coincidir exactamente con la URI registrada en el panel de Spotify. */
   const REDIRECT = location.origin + location.pathname;
 
+  /* Client ID de la app registrada en el panel de Spotify. Es público por diseño
+     en PKCE (no es un secreto): va aquí para que la app venga ya configurada.
+     Tiene que quedar declarado ANTES de la llamada a cargar(), que lo usa. */
+  const CLIENT_ID = '0cdb08bef0024c469f548081ee7af11d';
+
   let st = cargar();
   let iv = null, ultimaPortada = null, alEscuchar = null;
-
-  /* Client ID de la app registrada en el panel de Spotify. Es público por diseño
-     en PKCE (no es un secreto): va aquí para que la app venga ya configurada. */
-  const CLIENT_ID = '0cdb08bef0024c469f548081ee7af11d';
 
   function cargar() {
     const base = { clientId: CLIENT_ID, token: '', refresh: '', exp: 0, on: true };
