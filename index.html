@@ -423,11 +423,11 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
    La transparencia va dentro del propio degradado: sin --ambiente el color es
    "transparent" y la capa desaparece sola, sin depender de la opacidad. */
 .ambiente {
-  position: fixed; inset: 0 0 auto 0; height: 46vh; z-index: -1;
+  position: fixed; inset: 0 0 auto 0; height: 60vh; z-index: -1;
   pointer-events: none; opacity: 1;
-  background: radial-gradient(120% 90% at 50% 0%,
-    color-mix(in srgb, var(--ambiente, transparent) 26%, transparent) 0%,
-    transparent 68%);
+  background: radial-gradient(125% 95% at 50% 0%,
+    color-mix(in srgb, var(--ambiente, transparent) 46%, transparent) 0%,
+    transparent 82%);
 }
 
 /* Lo que suena, dentro de la barra de descanso */
@@ -1439,7 +1439,7 @@ const SPOT = (() => {
     const l = esOscuro ? .56 : .38;
     raiz.style.setProperty('--leather', hsl(tono, s, l));
     raiz.style.setProperty('--leather-soft', hsl(tono, esOscuro ? .42 : .55, esOscuro ? .13 : .90));
-    raiz.style.setProperty('--ambiente', hsl(tono, esOscuro ? .55 : .60, esOscuro ? .40 : .62));
+    raiz.style.setProperty('--ambiente', hsl(tono, esOscuro ? .70 : .74, esOscuro ? .46 : .58));
     raiz.classList.add('con-musica');
   }
   function despintar() {
