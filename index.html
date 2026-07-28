@@ -120,6 +120,8 @@ html, body {
   min-height: 100vh;
   min-height: 100dvh;
   overscroll-behavior-y: none;
+  /* Quita el doble-toque-zoom de iOS; el pellizco para ampliar sigue funcionando. */
+  touch-action: manipulation;
 }
 
 body {
