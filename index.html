@@ -454,6 +454,24 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
   line-height: 1.5; word-break: break-all;
 }
 
+/* botones − / + para ajustar el descanso */
+.rest-adj {
+  width: 32px; height: 32px; flex: 0 0 auto; border-radius: 10px;
+  border: 1px solid var(--hair); background: var(--panel-2);
+  color: var(--chalk-dim); font-family: var(--f-num); font-size: 19px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
+  transition: transform .1s ease, background .12s ease;
+}
+.rest-adj:active { transform: scale(.92); background: var(--court-2); }
+
+/* entrada de texto del entrenador IA */
+.ia-in {
+  width: 100%; border: 0; background: transparent; color: var(--chalk);
+  font: inherit; font-size: 15px; line-height: 1.45; resize: vertical;
+  outline: none; min-height: 62px; display: block;
+}
+.ia-in::placeholder { color: var(--chalk-mute); }
+
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
@@ -1491,11 +1509,83 @@ const SPOT = (() => {
 })();
 
 
+/* VERTICAL — entrenador IA.
+   Usa TU propia clave de Anthropic, guardada solo en este móvil. Las peticiones
+   van directas del navegador a la API de Anthropic (cabecera de acceso directo).
+   La app nunca envía tu clave a ningún otro sitio. */
+
+const IA = (() => {
+  const K = 'vertical.ia';
+  const MODELO = 'claude-opus-5';
+
+  let st = cargar();
+  function cargar() {
+    try { return Object.assign({ key: '' }, JSON.parse(localStorage.getItem(K) || '{}')); }
+    catch (e) { return { key: '' }; }
+  }
+  function guardar() { try { localStorage.setItem(K, JSON.stringify(st)); } catch (e) { } }
+
+  const SISTEMA =
+    'Eres el entrenador de VERTICAL, una app de fuerza para baloncesto. ' +
+    'El programa es un microciclo de dos semanas en espejo con 3 sesiones de ' +
+    'gimnasio (tren inferior, core, tren superior) orientadas a salto, cambios ' +
+    'de dirección, contacto y prevención de lesiones. Respondes en español, con ' +
+    'los decimales en coma. Eres claro y conciso: vas al grano y priorizas lo ' +
+    'accionable. Cuando sustituyas un ejercicio o propongas una rutina, da para ' +
+    'cada ejercicio las series, el rango de repeticiones, el descanso y 2-3 ' +
+    'claves de técnica; explica en una línea por qué encaja para baloncesto. ' +
+    'No inventas que puedes modificar la app: das la recomendación para que la ' +
+    'persona la aplique. Si algo puede ser lesivo sin supervisión, avísalo.';
+
+  /* Pregunta libre al entrenador. `contexto` es texto opcional (p. ej. la ficha
+     del ejercicio actual) que se antepone a la pregunta. */
+  async function preguntar(prompt, contexto) {
+    if (!st.key) throw new Error('Falta la clave de Anthropic.');
+    const contenido = (contexto ? contexto.trim() + '\n\n' : '') + prompt.trim();
+    let r, j;
+    try {
+      r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': st.key,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: MODELO,
+          max_tokens: 4000,
+          system: SISTEMA,
+          messages: [{ role: 'user', content: contenido }]
+        })
+      });
+    } catch (e) { throw new Error('Sin conexión con la IA.'); }
+
+    try { j = await r.json(); } catch (e) { j = {}; }
+    if (!r.ok) {
+      if (r.status === 401) throw new Error('La clave no es válida.');
+      if (r.status === 429) throw new Error('Has llegado al límite de tu cuenta. Prueba en un rato.');
+      throw new Error((j.error && j.error.message) || 'La IA ha devuelto un error.');
+    }
+    if (j.stop_reason === 'refusal') throw new Error('La IA no ha podido responder a esto.');
+    const txt = (j.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+    return txt || 'La IA no ha devuelto respuesta.';
+  }
+
+  return {
+    get estado() { return { hayClave: !!st.key, modelo: MODELO }; },
+    setKey(v) { st.key = (v || '').trim(); guardar(); },
+    borrarClave() { st.key = ''; guardar(); },
+    preguntar
+  };
+})();
+
+
 /* VERTICAL — estado, navegación y pantallas. */
 
 /* ============ estado ============ */
 const KEY = 'vertical.v1';
-const DEF = { v: 1, idx: 0, cycles: 0, log: [], active: null, body: [], jump: [], theme: 'auto', sound: true };
+const DEF = { v: 1, idx: 0, cycles: 0, log: [], active: null, body: [], jump: [], theme: 'auto', sound: true, restOff: 0, restEx: {} };
 
 let S = load();
 function load() {
@@ -1524,6 +1614,15 @@ const DOWL = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', '
 const fmtDate = d => { const x = new Date(d + 'T12:00'); return `${x.getDate()} ${['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][x.getMonth()]}`; };
 const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : null; };
 const topReps = r => Math.max(...(String(r).match(/\d+/g) || [0]).map(Number));
+
+/* ---- descanso configurable (#1) ----
+   restEx[ex] es el descanso base de un ejercicio (sustituye al del plan);
+   restOff es un ajuste global que se suma a todos por igual. */
+const RESTMIN = 10, RESTMAX = 1200;
+const baseRest = it => (S.restEx && S.restEx[it.ex] != null) ? S.restEx[it.ex] : it.rest;
+const restFor = it => Math.min(RESTMAX, Math.max(RESTMIN, baseRest(it) + (S.restOff || 0)));
+const fmtRest = sec => sec >= 60 ? (sec / 60 % 1 ? (sec / 60).toFixed(1).replace('.', ',') : sec / 60) + ' min' : sec + ' s';
+const fmtRestShort = sec => sec >= 60 ? (sec / 60 % 1 ? (sec / 60).toFixed(1).replace('.', ',') : sec / 60) + '′' : sec + '″';
 
 /* Configuración de campos según el tipo de registro. */
 const FIELDS = {
@@ -1707,7 +1806,7 @@ function vHoy(s) {
   /* Tarjeta de la sesión */
   const card = el('section', 'card today');
   const totalSets = d.items.reduce((n, i) => n + i.sets, 0);
-  const est = Math.round(d.items.reduce((m, i) => m + i.sets * (i.rest + 45), 0) / 60);
+  const est = Math.round(d.items.reduce((m, i) => m + i.sets * (restFor(i) + 45), 0) / 60);
   card.innerHTML = `
     <div>
       <span class="slot">Día ${c.slot} <span style="color:var(--chalk-mute)">·</span> ${esc(DOW[c.day])}</span>
@@ -1765,7 +1864,7 @@ function exRow(it, sess) {
   if (done >= it.sets) r.classList.add('done');
   r.innerHTML = `
     <span class="thumb"><canvas data-anim="${e.anim}" data-zoom="1.24"></canvas></span>
-    <span class="nm"><strong>${esc(e.name)}</strong><span>${it.sets} × ${esc(it.reps)} · ${it.rest >= 60 ? (it.rest / 60).toFixed(it.rest % 60 ? 1 : 0).replace('.5', ',5') + ' min' : it.rest + ' s'}</span></span>
+    <span class="nm"><strong>${esc(e.name)}</strong><span>${it.sets} × ${esc(it.reps)} · ${fmtRest(restFor(it))}</span></span>
     <span class="prog">${sess ? done + '/' + it.sets : ''}</span>`;
   r.onclick = () => go({ n: 'ex', ex: it.ex, item: it, live: !!sess });
   return r;
@@ -1848,11 +1947,30 @@ function vEx(s, v) {
   body.appendChild(st);
 
   if (it) {
-    const spec = el('div', 'card', `<div style="padding:13px 15px;display:flex;justify-content:space-around;text-align:center">
-      <div><div class="k" style="font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)">Series</div><div style="font-family:var(--f-num);font-size:21px;font-weight:700">${it.sets}</div></div>
-      <div><div class="k" style="font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)">Reps</div><div style="font-family:var(--f-num);font-size:21px;font-weight:700">${esc(it.reps)}</div></div>
-      <div><div class="k" style="font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)">Descanso</div><div style="font-family:var(--f-num);font-size:21px;font-weight:700">${it.rest >= 60 ? (it.rest / 60 % 1 ? (it.rest / 60).toFixed(1).replace('.', ',') : it.rest / 60) + '′' : it.rest + '″'}</div></div>
-    </div>`);
+    const kcss = 'font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)';
+    const vcss = 'font-family:var(--f-num);font-size:21px;font-weight:700';
+    const spec = el('div', 'card');
+    const inner = el('div');
+    inner.style.cssText = 'padding:13px 15px;display:flex;justify-content:space-around;align-items:center;text-align:center';
+    inner.innerHTML =
+      `<div><div style="${kcss}">Series</div><div style="${vcss}">${it.sets}</div></div>` +
+      `<div><div style="${kcss}">Reps</div><div style="${vcss}">${esc(it.reps)}</div></div>`;
+    /* Descanso editable por ejercicio */
+    const rc = el('div');
+    rc.innerHTML = `<div style="${kcss}">Descanso</div>`;
+    const rowd = el('div');
+    rowd.style.cssText = 'display:flex;align-items:center;gap:9px;margin-top:3px';
+    const minus = el('button', 'rest-adj', '−');
+    const plus = el('button', 'rest-adj', '+');
+    const val = el('div');
+    val.style.cssText = vcss + ';min-width:46px';
+    const paint = () => { val.textContent = fmtRestShort(restFor(it)); };
+    const adj = delta => { S.restEx[it.ex] = Math.min(RESTMAX, Math.max(RESTMIN, baseRest(it) + delta)); save(); paint(); };
+    minus.setAttribute('aria-label', 'Menos descanso'); plus.setAttribute('aria-label', 'Más descanso');
+    minus.onclick = () => adj(-15); plus.onclick = () => adj(15); paint();
+    rowd.append(minus, val, plus); rc.appendChild(rowd);
+    inner.appendChild(rc);
+    spec.appendChild(inner);
     body.appendChild(spec);
   }
 
@@ -1943,7 +2061,7 @@ function setsEditor(exId, it, e) {
         if (need) { toast('Anota las repeticiones antes de cerrar la serie.'); return; }
         set.done = true; save();
         row.classList.add('done');
-        startRest(it.rest);
+        startRest(restFor(it));
         if (arr.every(x => x.done)) toast('Ejercicio completo.');
       } else { set.done = false; save(); row.classList.remove('done'); }
       refreshTick();
@@ -2189,7 +2307,24 @@ function vAjustes(s) {
   sb.onclick = () => { S.sound = !S.sound; save(); if (S.sound) beep(1); render(); };
   row.appendChild(sb);
   snd.appendChild(row);
-  snd.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">iOS no deja que una app web haga vibrar el móvil, así que el aviso es un pitido. Súbele el volumen si el gimnasio está ruidoso.</span>`));
+
+  /* Ajuste global del descanso (#1): se suma al de cada ejercicio. */
+  const offRow = el('div', 'row');
+  offRow.style.marginTop = '10px';
+  offRow.innerHTML = `<span class="lb">Ajuste global<br><span style="font-size:12px;color:var(--chalk-mute)">se suma al descanso de todos</span></span>`;
+  const grp = el('div');
+  grp.style.cssText = 'display:flex;align-items:center;gap:9px';
+  const om = el('button', 'rest-adj', '−');
+  const op = el('button', 'rest-adj', '+');
+  const ov = el('div');
+  ov.style.cssText = 'font-family:var(--f-num);font-size:16px;font-weight:650;min-width:56px;text-align:center';
+  const paintOff = () => { const v = S.restOff || 0; ov.textContent = v === 0 ? 'por defecto' : (v > 0 ? '+' : '−') + Math.abs(v) + ' s'; };
+  const adjOff = d => { S.restOff = Math.min(120, Math.max(-120, (S.restOff || 0) + d)); save(); paintOff(); render(); };
+  om.onclick = () => adjOff(-15); op.onclick = () => adjOff(15); paintOff();
+  grp.append(om, ov, op); offRow.appendChild(grp);
+  snd.appendChild(offRow);
+
+  snd.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">iOS no deja que una app web haga vibrar el móvil, así que el aviso es un pitido. El descanso de cada ejercicio lo afinas en su ficha con − / +.</span>`));
   body.appendChild(snd);
 
   /* ---- Spotify ---- */
@@ -2256,6 +2391,63 @@ function vAjustes(s) {
 
   sp.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">Inicias sesión en la página de Spotify, no aquí: esta app nunca ve tu contraseña. Solo cambia el color de acento y una veladura de fondo; el fondo y los textos no se tocan, para que se lea igual de bien con cualquier disco.</span>`));
   body.appendChild(sp);
+
+  /* ---- Entrenador IA (#3) ---- */
+  const ia = el('section');
+  ia.innerHTML = `<p class="sect-title">Entrenador IA</p>`;
+  const ie = IA.estado;
+
+  if (!ie.hayClave) {
+    ia.appendChild(el('div', 'card', `<div style="padding:14px 15px;font-size:14.5px;line-height:1.5;color:var(--chalk-dim)">
+      Pega tu clave de Anthropic y podrás pedirle al entrenador que te sustituya un ejercicio o te genere una rutina con tus palabras.<br><br>
+      <b style="color:var(--chalk)">1.</b> Crea una clave en el panel de Anthropic (console.anthropic.com).<br>
+      <b style="color:var(--chalk)">2.</b> Ponle un límite de gasto: cada consulta la pagas tú.<br>
+      <b style="color:var(--chalk)">3.</b> Pégala aquí (se guarda solo en este móvil):</div>`));
+    const kr = el('div', 'row');
+    kr.innerHTML = `<span class="lb">Clave</span>`;
+    const kf = el('span', 'fld');
+    kf.style.cssText = 'flex:1;max-width:180px';
+    kf.innerHTML = `<label>anthropic</label><input type="password" placeholder="sk-ant-…" autocomplete="off" autocapitalize="off" spellcheck="false">`;
+    const ki = kf.querySelector('input');
+    ki.style.fontSize = '12px';
+    ki.oninput = () => IA.setKey(ki.value);
+    kr.appendChild(kf);
+    ia.appendChild(kr);
+    const kb = el('button', 'btn', 'Guardar clave');
+    kb.style.marginTop = '10px';
+    kb.onclick = () => { if (!IA.estado.hayClave) { toast('Pega antes la clave.'); return; } render(); };
+    ia.appendChild(kb);
+    ia.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">La clave viaja directa de tu móvil a Anthropic, a ningún otro sitio; da acceso a tu cuenta, así que ponle un límite de gasto. Quien tenga tu móvil desbloqueado podría leerla.</span>`));
+  } else {
+    const pf = el('div', 'card');
+    pf.style.cssText = 'padding:12px 13px';
+    pf.innerHTML = `<textarea class="ia-in" rows="3" placeholder="Sustituye la búlgara por algo sin banco · Genérame una rutina de empuje para casa…"></textarea>`;
+    const ta = pf.querySelector('textarea');
+    ia.appendChild(pf);
+    const out = el('div');
+    out.style.marginTop = '12px';
+    const ask = el('button', 'btn', 'Preguntar al entrenador');
+    ask.style.marginTop = '10px';
+    ask.onclick = async () => {
+      const q = ta.value.trim();
+      if (!q) { toast('Escribe qué quieres.'); return; }
+      ask.disabled = true; const prev = ask.textContent; ask.textContent = 'Pensando…';
+      out.innerHTML = '';
+      try {
+        const resp = await IA.preguntar(q);
+        out.appendChild(el('div', 'card', `<div style="padding:14px 15px;white-space:pre-wrap;font-size:14.5px;line-height:1.55;color:var(--chalk-dim)">${esc(resp)}</div>`));
+      } catch (err) { toast(err.message || 'No se ha podido.'); }
+      ask.disabled = false; ask.textContent = prev;
+    };
+    ia.appendChild(ask);
+    ia.appendChild(out);
+    const rm = el('button', 'btn btn-ghost btn-sm', 'Quitar clave');
+    rm.style.marginTop = '10px';
+    rm.onclick = () => { IA.borrarClave(); render(); toast('Clave quitada.'); };
+    ia.appendChild(rm);
+    ia.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">Da consejo de entrenador; no reescribe el programa de la app (cada ejercicio tiene su animación propia). Cada consulta la pagas en tu cuenta de Anthropic.</span>`));
+  }
+  body.appendChild(ia);
 
   const cyc = el('section');
   cyc.innerHTML = `<p class="sect-title">Punto del ciclo</p>`;
