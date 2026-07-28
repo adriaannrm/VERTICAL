@@ -927,7 +927,7 @@ const ANIM = (() => {
   const buBot = P({
     hd: [100, 58], nk: [103, 77], hp: [106, 116],
     e1: [112, 98], h1: [115, 126], e2: [96, 98], h2: [95, 126],
-    k1: [116, 132], a1: [102, 150], k2: [128, 140], a2: [150, 122]
+    k1: [94, 132], a1: [102, 150], k2: [128, 140], a2: [150, 122]
   });
   EXR.bulgarian = {
     dur: 3200, keys: [[0, buTop], [.45, buBot], [.85, buTop], [1, buTop]],
@@ -1580,23 +1580,30 @@ function toast(msg) {
   toastT = setTimeout(() => { t.style.opacity = '0'; }, 2600);
 }
 
-/* ============ cronómetro de descanso ============ */
-const R = { left: 0, total: 0, iv: null };
+/* ============ cronómetro de descanso ============
+   Cuenta contra la hora real de fin (R.endAt), no restando de uno en uno.
+   iOS congela el JavaScript cuando la app pasa a segundo plano, así que un
+   contador que restara cada segundo se quedaría parado; con la hora de fin,
+   al volver el tiempo restante es el correcto y, si ya se cumplió mientras
+   estabas fuera, suena al reaparecer. (iOS no permite ejecutar de verdad en
+   segundo plano ni avisar con la app cerrada; esto es lo máximo fiable.) */
+const R = { endAt: 0, total: 0, iv: null };
+function restante() { return Math.max(0, Math.round((R.endAt - Date.now()) / 1000)); }
 function startRest(sec) {
   clearInterval(R.iv);
-  R.total = sec; R.left = sec;
+  R.total = sec; R.endAt = Date.now() + sec * 1000;
   paintRest(); $('#rest').classList.add('on');
-  R.iv = setInterval(() => {
-    R.left--;
-    if (R.left <= 0) { stopRest(); beep(); toast('Descanso terminado. A por la siguiente.'); }
-    else paintRest();
-  }, 1000);
+  R.iv = setInterval(tickRest, 250);
+}
+function tickRest() {
+  if (restante() <= 0) { stopRest(); beep(); toast('Descanso terminado. A por la siguiente.'); }
+  else paintRest();
 }
 function stopRest() { clearInterval(R.iv); R.iv = null; $('#rest').classList.remove('on'); }
 function paintRest() {
-  const m = Math.floor(R.left / 60), s = R.left % 60;
+  const left = restante(), m = Math.floor(left / 60), s = left % 60;
   $('#rest-t').textContent = m ? `${m}:${String(s).padStart(2, '0')}` : `${s}s`;
-  $('#rest-f').style.width = (100 - (R.left / R.total) * 100) + '%';
+  $('#rest-f').style.width = (R.total ? 100 - (left / R.total) * 100 : 0) + '%';
 }
 
 /* ============ consultas al historial ============ */
@@ -2013,7 +2020,10 @@ function vProg(s) {
   /* KPIs */
   const k = el('div', 'kpis');
   const sess = S.log.length;
-  const totalVol = S.log.reduce((v, s2) => v + Object.values(s2.sets).reduce((a, arr) => a + volume(arr), 0), 0);
+  /* Los unilaterales (perSide) se hacen a las dos piernas/lados con la misma
+     carga, pero solo se registra una serie: cuentan el doble en el total. */
+  const totalVol = S.log.reduce((v, s2) => v + Object.entries(s2.sets)
+    .reduce((a, [exId, arr]) => a + volume(arr) * (EX[exId] && EX[exId].perSide ? 2 : 1), 0), 0);
   const jump = S.jump.length ? S.jump[S.jump.length - 1] : null;
   const jumpPrev = S.jump.length > 1 ? S.jump[S.jump.length - 2] : null;
   const bw = S.body.length ? S.body[S.body.length - 1] : null;
@@ -2382,7 +2392,7 @@ function boot() {
   applyTheme();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { applyTheme(); SPOT.repintar(); });
   $('#rest-skip').onclick = stopRest;
-  $('#rest-add').onclick = () => { R.left += 30; R.total = Math.max(R.total, R.left); paintRest(); };
+  $('#rest-add').onclick = () => { R.endAt += 30000; R.total = Math.max(R.total, restante()); paintRest(); };
   if (S.active) stack = [{ n: 'hoy' }];
   render();
 
@@ -2394,7 +2404,7 @@ function boot() {
     SPOT.arrancar();
   });
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') SPOT.arrancar(); else SPOT.parar();
+    if (document.visibilityState === 'visible') { SPOT.arrancar(); if (R.iv) tickRest(); } else SPOT.parar();
   });
 }
 
