@@ -472,6 +472,37 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 }
 .ia-in::placeholder { color: var(--chalk-mute); }
 
+/* control segmentado / subpestañas (toque Hevy) */
+.seg {
+  display: flex; gap: 4px; padding: 4px;
+  background: var(--court-2); border: 1px solid var(--hair-soft); border-radius: 13px;
+}
+.seg-b {
+  flex: 1; padding: 8px 6px; border-radius: 10px; line-height: 1;
+  font-size: 13.5px; font-weight: 600; color: var(--chalk-mute);
+  transition: background .15s ease, color .15s ease;
+}
+.seg-b.on { background: var(--panel); color: var(--chalk); box-shadow: var(--shadow); }
+
+/* botón central + de la barra de pestañas */
+.tabbar .tb-plus svg {
+  width: 24px; height: 24px; padding: 6px; box-sizing: content-box;
+  background: var(--leather); color: #FFF; border-radius: 50%; stroke-width: 2.6;
+}
+
+/* tarjetas del historial (Inicio) */
+.feed { padding: 14px 15px; }
+.feed-h strong { font-size: 16px; letter-spacing: -.012em; }
+.feed-d { display: block; font-family: var(--f-mono); font-size: 11px; color: var(--chalk-mute); margin-top: 3px; }
+.feed-m { display: flex; gap: 18px; margin-top: 9px; color: var(--chalk-dim); font-size: 13px; }
+.feed-m b { font-family: var(--f-num); color: var(--chalk); font-weight: 650; }
+.feed-row { display: flex; gap: 8px; margin-top: 12px; }
+.feed-th {
+  flex: 0 0 60px; height: 46px; border-radius: 8px; overflow: hidden;
+  background: var(--court-2); border: 1px solid var(--hair-soft);
+}
+.feed-th canvas { width: 100%; height: 100%; display: block; }
+
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
@@ -1766,7 +1797,7 @@ const app = () => $('#app');
 function render() {
   const v = here();
   const s = el('main', 'screen');
-  ({ hoy: vHoy, sesion: vSesion, ex: vEx, plan: vPlan, lista: vLista, prog: vProg, ajustes: vAjustes })[v.n](s, v);
+  ({ inicio: vInicio, hoy: vHoy, sesion: vSesion, ex: vEx, biblio: vBiblio, lista: vLista, tu: vTu, ajustes: vAjustes })[v.n](s, v);
   const old = $('main.screen');
   if (old) old.replaceWith(s); else app().insertBefore(s, $('.tabbar'));
   paintTabs(v.n);
@@ -1803,6 +1834,95 @@ function header(s, eyebrow, title, sub, withBack) {
   if (withBack) h.querySelector('.bk').onclick = back;
   s.appendChild(h);
   return h;
+}
+
+/* Control segmentado (subpestañas / chips) — toque moderno. */
+function segmented(items, active, onPick) {
+  const wrap = el('div', 'seg');
+  items.forEach(([k, label]) => {
+    const b = el('button', 'seg-b' + (k === active ? ' on' : ''), esc(label));
+    b.onclick = () => { if (k !== active) onPick(k); };
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
+
+/* Empezar/continuar la sesión del día (botón central +). */
+function startWorkout() {
+  if (!S.active) newSession();
+  stack = [{ n: 'hoy' }, { n: 'sesion' }];
+  render();
+}
+
+/* ---------- INICIO · historial de sesiones ---------- */
+function vInicio(s) {
+  header(s, 'Inicio', S.log.length ? 'Tus entrenamientos' : 'Empieza a entrenar',
+    S.log.length ? 'Lo que has cerrado, de lo más reciente a lo más antiguo.' : 'Cuando cierres una sesión aparecerá aquí con su volumen y sus récords.');
+  const body = el('div', 'stack-lg');
+
+  if (!S.log.length) {
+    const btn = el('button', 'btn');
+    btn.innerHTML = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12z"/></svg> Empezar sesión de hoy`;
+    btn.onclick = startWorkout;
+    body.appendChild(btn);
+    s.appendChild(body);
+    return;
+  }
+
+  const st = el('div', 'stack');
+  [...S.log].reverse().forEach(a => {
+    const d = DAYS[a.kind];
+    const vol = Object.entries(a.sets).reduce((acc, [id, arr]) => acc + volume(arr) * (EX[id] && EX[id].perSide ? 2 : 1), 0);
+    const done = Object.values(a.sets).flat().filter(x => x.done).length;
+    const thumbs = d.items.slice(0, 4).map(it => `<span class="feed-th"><canvas data-anim="${EX[it.ex].anim}" data-zoom="1.3"></canvas></span>`).join('');
+    const card = el('div', 'card feed');
+    card.innerHTML = `
+      <div class="feed-h"><strong>${esc(d.title)}</strong><span class="feed-d">${esc(fmtDate(a.date))} · Semana ${a.week} · Día ${a.slot}</span></div>
+      <div class="feed-m"><span><b>${done}</b> series</span><span><b>${vol >= 1000 ? nf(vol / 1000) + ' t' : nf(vol) + ' kg'}</b> volumen</span></div>
+      <div class="feed-row">${thumbs}</div>`;
+    st.appendChild(card);
+  });
+  body.appendChild(st);
+  s.appendChild(body);
+}
+
+/* ---------- BIBLIOTECA (hub: Programas / Rutinas / Ejercicios) ---------- */
+function vBiblio(s, v) {
+  header(s, 'Biblioteca', 'Tu biblioteca', null);
+  const t = v.tab || 'programas';
+  const body = el('div', 'stack-lg');
+  body.appendChild(segmented([['programas', 'Programas'], ['rutinas', 'Rutinas'], ['ejercicios', 'Ejercicios']], t, k => { here().tab = k; render(); }));
+  const cont = el('div', 'stack-lg');
+  if (t === 'programas') programaBody(cont);
+  else if (t === 'rutinas') rutinasBody(cont);
+  else ejerciciosBody(cont);
+  body.appendChild(cont);
+  body.appendChild(iaAsk());
+  s.appendChild(body);
+}
+
+/* ---------- TÚ (hub: Resumen / Ejercicios / Medidas) ---------- */
+function vTu(s, v) {
+  const hd = el('header', 'hdr');
+  hd.style.position = 'relative';
+  hd.innerHTML = `<p class="eyebrow">Perfil</p><h1>Tú</h1><span class="arc"></span>`;
+  const gear = el('button');
+  gear.setAttribute('aria-label', 'Ajustes');
+  gear.style.cssText = 'position:absolute;top:calc(env(safe-area-inset-top) + 16px);right:0;color:var(--chalk-dim)';
+  gear.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2 2M7.3 16.7l-2 2M18.7 18.7l-2-2M7.3 7.3l-2-2"/></svg>`;
+  gear.onclick = () => go({ n: 'ajustes' });
+  hd.appendChild(gear);
+  s.appendChild(hd);
+
+  const t = v.tab || 'resumen';
+  const body = el('div', 'stack-lg');
+  body.appendChild(segmented([['resumen', 'Resumen'], ['ejercicios', 'Ejercicios'], ['medidas', 'Medidas']], t, k => { here().tab = k; render(); }));
+  const cont = el('div', 'stack-lg');
+  if (t === 'resumen') progResumen(cont);
+  else if (t === 'ejercicios') tuEjercicios(cont);
+  else progMedidas(cont);
+  body.appendChild(cont);
+  s.appendChild(body);
 }
 
 /* ---------- HOY ---------- */
@@ -2101,7 +2221,7 @@ function iaAsk() {
     const c = el('div', 'card', `<div style="padding:14px 15px;font-size:14px;line-height:1.5;color:var(--chalk-dim)">Configura tu clave gratuita de Gemini en <b style="color:var(--chalk)">Ajustes → Entrenador IA</b> y aquí podrás pedirle que te sustituya un ejercicio o te genere una rutina.</div>`);
     const b = el('button', 'btn btn-ghost btn-sm', 'Ir a Ajustes');
     b.style.margin = '11px 0 0 15px';
-    b.onclick = () => tab('ajustes');
+    b.onclick = () => go({ n: 'ajustes' });
     c.appendChild(b);
     sec.appendChild(c);
     return sec;
@@ -2133,10 +2253,16 @@ function iaAsk() {
   return sec;
 }
 
-function vPlan(s) {
-  header(s, 'El programa', 'Microciclo de dos semanas', 'Las semanas van en espejo: lo que en la 1 es tren inferior, en la 2 es tren superior.');
-  const body = el('div', 'stack-lg');
-  body.appendChild(iaAsk());
+/* ---------- BIBLIOTECA · Programas ---------- */
+function programaBody(body) {
+  const totalRut = 3, totalEx = 19;
+  const card = el('div', 'card');
+  card.style.cssText = 'padding:16px;display:block';
+  card.innerHTML = `
+    <span class="slot" style="font-family:var(--f-mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--leather)">Programa · baloncesto</span>
+    <strong style="display:block;font-size:21px;margin-top:5px;letter-spacing:-.02em">VERTICAL</strong>
+    <span style="display:block;color:var(--chalk-dim);font-size:13.5px;margin-top:4px">Microciclo de 2 semanas en espejo · ${totalRut} rutinas · ${totalEx} ejercicios</span>`;
+  body.appendChild(card);
 
   [1, 2].forEach(w => {
     const sec = el('section');
@@ -2145,15 +2271,15 @@ function vPlan(s) {
     CYCLE.filter(c => c.week === w).forEach(c => {
       const d = DAYS[c.kind];
       const isNow = CYCLE.indexOf(c) === S.idx % 6;
-      const card = el('button', 'card');
-      card.style.cssText = 'padding:15px;text-align:left;width:100%;display:block' + (isNow ? ';border-color:var(--leather)' : '');
-      card.innerHTML = `
+      const b = el('button', 'card');
+      b.style.cssText = 'padding:15px;text-align:left;width:100%;display:block' + (isNow ? ';border-color:var(--leather)' : '');
+      b.innerHTML = `
         <span class="slot" style="font-family:var(--f-mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:${isNow ? 'var(--leather)' : 'var(--chalk-mute)'}">
           Día ${c.slot} · ${DOW[c.day]}${isNow ? ' · ahora' : ''}</span>
         <strong style="display:block;font-size:19px;margin-top:4px;letter-spacing:-.015em">${esc(d.title)}</strong>
         <span style="display:block;color:var(--chalk-dim);font-size:13.5px;margin-top:3px">${esc(d.items.map(i => EX[i.ex].tag).join(' · '))}</span>`;
-      card.onclick = () => go({ n: 'lista', kind: c.kind });
-      st.appendChild(card);
+      b.onclick = () => go({ n: 'lista', kind: c.kind });
+      st.appendChild(b);
     });
     sec.appendChild(st);
     body.appendChild(sec);
@@ -2170,32 +2296,72 @@ function vPlan(s) {
   ].forEach((c, i) => ul.appendChild(el('li', '', `<b>${String(i + 1).padStart(2, '0')}</b><span>${esc(c)}</span>`)));
   notes.appendChild(ul);
   body.appendChild(notes);
-  s.appendChild(body);
 }
 
-/* ---------- LISTA DE EJERCICIOS ---------- */
-function vLista(s, v) {
-  const kinds = v.kind ? [v.kind] : ['inferior', 'core', 'superior'];
-  header(s, 'Biblioteca', v.kind ? DAYS[v.kind].title : 'Ejercicios',
-    v.kind ? DAYS[v.kind].subtitle : 'Los 19 movimientos del programa, cada uno con su muestra animada.', !!v.kind);
-  const body = el('div', 'stack-lg');
-  kinds.forEach(k => {
+/* ---------- BIBLIOTECA · Rutinas ---------- */
+function rutinasBody(body) {
+  const st = el('div', 'stack');
+  ['inferior', 'core', 'superior'].forEach(kind => {
+    const d = DAYS[kind];
+    const sets = d.items.reduce((n, i) => n + i.sets, 0);
+    const est = Math.round(d.items.reduce((m, i) => m + i.sets * (restFor(i) + 45), 0) / 60);
+    const b = el('button', 'card');
+    b.style.cssText = 'padding:15px;text-align:left;width:100%;display:block';
+    b.innerHTML = `
+      <strong style="display:block;font-size:18px;letter-spacing:-.015em">${esc(d.title)}</strong>
+      <span style="display:block;color:var(--chalk-dim);font-size:13px;margin-top:3px">${d.items.length} ejercicios · ${sets} series · ~${est} min</span>
+      <span style="display:block;color:var(--chalk-mute);font-size:12px;margin-top:6px">${esc(d.items.map(i => EX[i.ex].tag).join(' · '))}</span>`;
+    b.onclick = () => go({ n: 'lista', kind });
+    st.appendChild(b);
+  });
+  body.appendChild(st);
+}
+
+/* ---------- BIBLIOTECA · Ejercicios (los 19) ---------- */
+function ejerciciosBody(body) {
+  ['inferior', 'core', 'superior'].forEach(k => {
     const sec = el('section');
-    if (!v.kind) sec.innerHTML = `<p class="sect-title">${esc(DAYS[k].title)}</p>`;
+    sec.innerHTML = `<p class="sect-title">${esc(DAYS[k].title)}</p>`;
     const st = el('div', 'stack');
     DAYS[k].items.forEach(it => st.appendChild(exRow(it, null)));
     sec.appendChild(st);
     body.appendChild(sec);
   });
+}
+
+/* ---------- Detalle de rutina (una sesión) ---------- */
+function vLista(s, v) {
+  const d = DAYS[v.kind];
+  header(s, 'Rutina', d.title, d.subtitle, true);
+  const body = el('div', 'stack-lg');
+
+  const sets = d.items.reduce((n, i) => n + i.sets, 0);
+  const est = Math.round(d.items.reduce((m, i) => m + i.sets * (restFor(i) + 45), 0) / 60);
+  body.appendChild(el('div', 'card', `<div style="padding:14px 15px;display:flex;justify-content:space-around;text-align:center">
+    <div><div class="k" style="font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)">Series</div><div style="font-family:var(--f-num);font-size:21px;font-weight:700">${sets}</div></div>
+    <div><div class="k" style="font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)">Ejercicios</div><div style="font-family:var(--f-num);font-size:21px;font-weight:700">${d.items.length}</div></div>
+    <div><div class="k" style="font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)">Duración</div><div style="font-family:var(--f-num);font-size:21px;font-weight:700">~${est}′</div></div>
+  </div>`));
+
+  const list = el('div', 'stack');
+  d.items.forEach(it => list.appendChild(exRow(it, null)));
+  body.appendChild(list);
+
+  /* Solo se puede iniciar la rutina del día programado (la sesión sigue el ciclo). */
+  const esHoy = cur().kind === v.kind;
+  if (esHoy) {
+    const btn = el('button', 'btn');
+    btn.textContent = S.active ? 'Continuar sesión' : 'Iniciar entrenamiento';
+    btn.onclick = () => { if (!S.active) newSession(); stack = [{ n: 'hoy' }, { n: 'sesion' }]; render(); };
+    body.appendChild(btn);
+  } else {
+    body.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">Esta rutina se inicia el día que toca en el ciclo. Hoy toca ${esc(DAYS[cur().kind].title)}.</span>`));
+  }
   s.appendChild(body);
 }
 
-/* ---------- PROGRESO ---------- */
-function vProg(s) {
-  header(s, 'Progreso', '¿Estoy mejorando?', 'Tus marcas frente a los ciclos anteriores.');
-  const body = el('div', 'stack-lg');
-
-  /* KPIs */
+/* ---------- TÚ · Resumen (antes Progreso) ---------- */
+function progResumen(body) {
   const k = el('div', 'kpis');
   const sess = S.log.length;
   /* Los unilaterales (perSide) se hacen a las dos piernas/lados con la misma
@@ -2215,45 +2381,74 @@ function vProg(s) {
     <div class="d">${bw && bwPrev ? (bw.kg - bwPrev.kg >= 0 ? '+' : '') + nf(bw.kg - bwPrev.kg) + ' kg' : 'sin registro'}</div>`));
   body.appendChild(k);
 
-  /* medidas */
+  const withData = Object.keys(EX).filter(id => allSets(id).length);
+  if (!withData.length) {
+    body.appendChild(el('div', 'empty', 'Aún no hay nada que medir.<br>Cierra tu primera sesión y aquí empezarán a salir las curvas.'));
+    return;
+  }
+  const pr = el('section');
+  pr.innerHTML = `<p class="sect-title">Récords personales</p>`;
+  const st = el('div', 'stack');
+  withData.forEach(id => {
+    const b = prOf(id), e = EX[id];
+    if (!b) return;
+    const one = e.log === 'weight' && b.w > 0 ? e1rm(b.w, b.r) : 0;
+    st.appendChild(el('div', 'pr', `
+      <span class="nm">${esc(e.tag)}${one ? `<br><span class="dt">1RM estimado ${one} kg</span>` : ''}</span>
+      <span style="text-align:right"><span class="val">${esc(fmtSet(b, e.log))}</span><br><span class="dt">${esc(fmtDate(b.date))}</span></span>`));
+  });
+  pr.appendChild(st);
+  body.appendChild(pr);
+
+  const ch = el('section');
+  ch.innerHTML = `<p class="sect-title">Curvas por ejercicio</p>`;
+  const cs = el('div', 'stack');
+  withData.forEach(id => { const h = allSets(id); if (h.length > 1) cs.appendChild(chartCard(EX[id], h)); });
+  ch.appendChild(cs);
+  if (cs.children.length) body.appendChild(ch);
+}
+
+/* ---------- TÚ · Medidas ---------- */
+function progMedidas(body) {
   const med = el('section');
   med.innerHTML = `<p class="sect-title">Anotar marca</p>`;
   const mrow = el('div', 'stack');
   mrow.appendChild(measure('Salto: altura de cajón', 'cm', v => { S.jump.push({ date: today(), cm: v }); save(); render(); }));
   mrow.appendChild(measure('Peso corporal', 'kg', v => { S.body.push({ date: today(), kg: v }); save(); render(); }));
   med.appendChild(mrow);
-  if (S.jump.length > 1) med.appendChild(simpleChart('Altura de cajón', S.jump.map(x => ({ d: x.date, v: x.cm })), 'cm'));
-  if (S.body.length > 1) med.appendChild(simpleChart('Peso corporal', S.body.map(x => ({ d: x.date, v: x.kg })), 'kg'));
   body.appendChild(med);
+  if (S.jump.length > 1 || S.body.length > 1) {
+    const ch = el('section');
+    ch.innerHTML = `<p class="sect-title">Evolución</p>`;
+    if (S.jump.length > 1) ch.appendChild(simpleChart('Altura de cajón', S.jump.map(x => ({ d: x.date, v: x.cm })), 'cm'));
+    if (S.body.length > 1) ch.appendChild(simpleChart('Peso corporal', S.body.map(x => ({ d: x.date, v: x.kg })), 'kg'));
+    body.appendChild(ch);
+  } else {
+    body.appendChild(el('div', 'empty', 'Anota tu salto y tu peso de vez en cuando<br>y aquí verás cómo evolucionan.'));
+  }
+}
 
-  /* récords */
+/* ---------- TÚ · Ejercicios (histórico por movimiento) ---------- */
+function tuEjercicios(body) {
   const withData = Object.keys(EX).filter(id => allSets(id).length);
   if (!withData.length) {
-    body.appendChild(el('div', 'empty', 'Aún no hay nada que medir.<br>Cierra tu primera sesión y aquí empezarán a salir las curvas.'));
-  } else {
-    const pr = el('section');
-    pr.innerHTML = `<p class="sect-title">Récords personales</p>`;
-    const st = el('div', 'stack');
-    withData.forEach(id => {
-      const b = prOf(id), e = EX[id];
-      if (!b) return;
-      const one = e.log === 'weight' && b.w > 0 ? e1rm(b.w, b.r) : 0;
-      st.appendChild(el('div', 'pr', `
-        <span class="nm">${esc(e.tag)}${one ? `<br><span class="dt">1RM estimado ${one} kg</span>` : ''}</span>
-        <span style="text-align:right"><span class="val">${esc(fmtSet(b, e.log))}</span><br><span class="dt">${esc(fmtDate(b.date))}</span></span>`));
-    });
-    pr.appendChild(st);
-    body.appendChild(pr);
-
-    const ch = el('section');
-    ch.innerHTML = `<p class="sect-title">Curvas por ejercicio</p>`;
-    const cs = el('div', 'stack');
-    withData.forEach(id => { const h = allSets(id); if (h.length > 1) cs.appendChild(chartCard(EX[id], h)); });
-    ch.appendChild(cs);
-    if (cs.children.length) body.appendChild(ch);
+    body.appendChild(el('div', 'empty', 'Aún no has registrado ningún ejercicio.<br>Cierra una sesión y aparecerán aquí con tus marcas.'));
+    return;
   }
-
-  s.appendChild(body);
+  const sec = el('section');
+  const st = el('div', 'stack');
+  withData.forEach(id => {
+    const e = EX[id], b = prOf(id), l = lastEntry(id);
+    const r = el('button', 'exrow');
+    r.innerHTML = `
+      <span class="thumb"><canvas data-anim="${e.anim}" data-zoom="1.24"></canvas></span>
+      <span class="nm"><strong>${esc(e.name)}</strong><span>${b ? 'Récord ' + esc(fmtSet(b, e.log)) : ''}${l ? ' · última ' + esc(fmtDate(l.date)) : ''}</span></span>
+      <span class="prog">${allSets(id).length}</span>`;
+    r.onclick = () => go({ n: 'ex', ex: id });
+    st.appendChild(r);
+  });
+  sec.appendChild(st);
+  body.appendChild(sec);
 }
 
 function measure(label, unit, onAdd) {
@@ -2343,7 +2538,7 @@ function drawChart(cv, pts, unit) {
 
 /* ---------- AJUSTES ---------- */
 function vAjustes(s) {
-  header(s, 'Ajustes', 'Tu app', 'Todo lo que anotas vive solo en este iPhone.');
+  header(s, 'Ajustes', 'Tu app', 'Todo lo que anotas vive solo en este iPhone.', stack.length > 1);
   const body = el('div', 'stack-lg');
 
   const look = el('section');
@@ -2545,25 +2740,28 @@ function vAjustes(s) {
 
 /* ============ tabs ============ */
 const TABS = [
-  ['hoy', 'Hoy', '<path d="M4 20V9.5L12 3l8 6.5V20a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>'],
-  ['plan', 'Plan', '<rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M8.5 3v3M15.5 3v3M8 14h3M8 17.5h6"/>'],
-  ['lista', 'Ejercicios', '<path d="M6.5 9v6M17.5 9v6M3.5 10.5v3M20.5 10.5v3M6.5 12h11"/>'],
-  ['prog', 'Progreso', '<path d="M4 19V5M4 19h16M7.5 15.5l3.5-4 3 2.5 5-6.5"/>'],
-  ['ajustes', 'Ajustes', '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2 2M7.3 16.7l-2 2M18.7 18.7l-2-2M7.3 7.3l-2-2"/>']
+  ['inicio', 'Inicio', '<path d="M4 20V9.5L12 3l8 6.5V20a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>'],
+  ['hoy', 'Hoy', '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'],
+  ['nuevo', '', '<path d="M12 5.5v13M5.5 12h13"/>'],
+  ['biblio', 'Biblioteca', '<rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M3.5 9.5h17M8.5 3v3M15.5 3v3"/>'],
+  ['tu', 'Tú', '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/>']
 ];
+/* Qué pestaña resalta cada pantalla apilada. */
+const TAB_OF = { sesion: 'hoy', ex: 'biblio', lista: 'biblio', ajustes: 'tu' };
 function paintTabs(active) {
   const bar = $('.tabbar');
   if (!bar.children.length) {
     TABS.forEach(([k, l, p]) => {
-      const b = el('button', '', `<svg viewBox="0 0 24 24">${p}</svg><span>${l}</span>`);
-      b.onclick = () => { if (here().n !== k) tab(k); };
+      const b = el('button', k === 'nuevo' ? 'tb-plus' : '', `<svg viewBox="0 0 24 24">${p}</svg>${l ? `<span>${l}</span>` : ''}`);
+      b.onclick = k === 'nuevo' ? startWorkout : () => { if (here().n !== k) tab(k); };
       b.dataset.k = k;
       bar.appendChild(b);
     });
   }
   /* La pestaña marcada es la raíz de la pila, no la pantalla actual. */
-  const rootTab = stack[0].n === 'sesion' ? 'hoy' : stack[0].n;
-  [...bar.children].forEach(b => b.setAttribute('aria-current', b.dataset.k === rootTab));
+  const root = stack[0].n;
+  const cur = TAB_OF[root] || root;
+  [...bar.children].forEach(b => b.setAttribute('aria-current', b.dataset.k === cur));
 }
 
 /* ============ tema ============ */
@@ -2630,8 +2828,8 @@ function boot() {
   /* Spotify: recoger la vuelta del login y empezar a mirar qué suena. */
   SPOT.onPista(pintarPista);
   SPOT.volviendoDeSpotify().then(res => {
-    if (res && res.ok) { tab('ajustes'); toast('Spotify conectado.'); }
-    else if (res) { tab('ajustes'); toast(res.msg); }
+    if (res && res.ok) { go({ n: 'ajustes' }); toast('Spotify conectado.'); }
+    else if (res) { go({ n: 'ajustes' }); toast(res.msg); }
     SPOT.arrancar();
   });
   document.addEventListener('visibilitychange', () => {
