@@ -2091,9 +2091,52 @@ function setsEditor(exId, it, e) {
 }
 
 /* ---------- PLAN ---------- */
+/* Cuadro para preguntarle al entrenador IA. Vive en el plan; la clave se
+   configura en Ajustes. */
+function iaAsk() {
+  const sec = el('section');
+  sec.innerHTML = `<p class="sect-title">Entrenador IA</p>`;
+
+  if (!IA.estado.hayClave) {
+    const c = el('div', 'card', `<div style="padding:14px 15px;font-size:14px;line-height:1.5;color:var(--chalk-dim)">Configura tu clave gratuita de Gemini en <b style="color:var(--chalk)">Ajustes → Entrenador IA</b> y aquí podrás pedirle que te sustituya un ejercicio o te genere una rutina.</div>`);
+    const b = el('button', 'btn btn-ghost btn-sm', 'Ir a Ajustes');
+    b.style.margin = '11px 0 0 15px';
+    b.onclick = () => tab('ajustes');
+    c.appendChild(b);
+    sec.appendChild(c);
+    return sec;
+  }
+
+  const pf = el('div', 'card');
+  pf.style.cssText = 'padding:12px 13px';
+  pf.innerHTML = `<textarea class="ia-in" rows="3" placeholder="Sustituye la búlgara por algo sin banco · Genérame una rutina de empuje para casa…"></textarea>`;
+  const ta = pf.querySelector('textarea');
+  sec.appendChild(pf);
+  const out = el('div');
+  out.style.marginTop = '12px';
+  const ask = el('button', 'btn', 'Preguntar al entrenador');
+  ask.style.marginTop = '10px';
+  ask.onclick = async () => {
+    const q = ta.value.trim();
+    if (!q) { toast('Escribe qué quieres.'); return; }
+    ask.disabled = true; const prev = ask.textContent; ask.textContent = 'Pensando…';
+    out.innerHTML = '';
+    try {
+      const resp = await IA.preguntar(q);
+      out.appendChild(el('div', 'card', `<div style="padding:14px 15px;white-space:pre-wrap;font-size:14.5px;line-height:1.55;color:var(--chalk-dim)">${esc(resp)}</div>`));
+    } catch (err) { toast(err.message || 'No se ha podido.'); }
+    ask.disabled = false; ask.textContent = prev;
+  };
+  sec.appendChild(ask);
+  sec.appendChild(out);
+  sec.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">Da consejo de entrenador; no reescribe el programa (cada ejercicio tiene su animación propia). Usa la capa gratuita de Gemini.</span>`));
+  return sec;
+}
+
 function vPlan(s) {
   header(s, 'El programa', 'Microciclo de dos semanas', 'Las semanas van en espejo: lo que en la 1 es tren inferior, en la 2 es tren superior.');
   const body = el('div', 'stack-lg');
+  body.appendChild(iaAsk());
 
   [1, 2].forEach(w => {
     const sec = el('section');
@@ -2436,33 +2479,12 @@ function vAjustes(s) {
     ia.appendChild(kb);
     ia.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">La clave viaja directa de tu móvil a Google, a ningún otro sitio. En la capa gratuita Google puede usar los prompts para mejorar sus productos. Quien tenga tu móvil desbloqueado podría leer la clave.</span>`));
   } else {
-    const pf = el('div', 'card');
-    pf.style.cssText = 'padding:12px 13px';
-    pf.innerHTML = `<textarea class="ia-in" rows="3" placeholder="Sustituye la búlgara por algo sin banco · Genérame una rutina de empuje para casa…"></textarea>`;
-    const ta = pf.querySelector('textarea');
-    ia.appendChild(pf);
-    const out = el('div');
-    out.style.marginTop = '12px';
-    const ask = el('button', 'btn', 'Preguntar al entrenador');
-    ask.style.marginTop = '10px';
-    ask.onclick = async () => {
-      const q = ta.value.trim();
-      if (!q) { toast('Escribe qué quieres.'); return; }
-      ask.disabled = true; const prev = ask.textContent; ask.textContent = 'Pensando…';
-      out.innerHTML = '';
-      try {
-        const resp = await IA.preguntar(q);
-        out.appendChild(el('div', 'card', `<div style="padding:14px 15px;white-space:pre-wrap;font-size:14.5px;line-height:1.55;color:var(--chalk-dim)">${esc(resp)}</div>`));
-      } catch (err) { toast(err.message || 'No se ha podido.'); }
-      ask.disabled = false; ask.textContent = prev;
-    };
-    ia.appendChild(ask);
-    ia.appendChild(out);
+    ia.appendChild(el('div', 'card', `<div style="padding:14px 15px;font-size:14.5px;line-height:1.5;color:var(--chalk-dim)">Clave guardada. Pregúntale al entrenador desde la pestaña <b style="color:var(--chalk)">Plan</b>.</div>`));
     const rm = el('button', 'btn btn-ghost btn-sm', 'Quitar clave');
     rm.style.marginTop = '10px';
     rm.onclick = () => { IA.borrarClave(); render(); toast('Clave quitada.'); };
     ia.appendChild(rm);
-    ia.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">Da consejo de entrenador; no reescribe el programa de la app (cada ejercicio tiene su animación propia). Usa la capa gratuita de Gemini.</span>`));
+    ia.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">El entrenador da consejo; no reescribe el programa de la app. Usa la capa gratuita de Gemini.</span>`));
   }
   body.appendChild(ia);
 
