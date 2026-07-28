@@ -1509,14 +1509,17 @@ const SPOT = (() => {
 })();
 
 
-/* VERTICAL — entrenador IA.
-   Usa TU propia clave de Anthropic, guardada solo en este móvil. Las peticiones
-   van directas del navegador a la API de Anthropic (cabecera de acceso directo).
-   La app nunca envía tu clave a ningún otro sitio. */
+/* VERTICAL — entrenador IA (Google Gemini).
+   Usa TU propia clave de Google AI Studio (capa gratuita), guardada solo en
+   este móvil. Las peticiones van directas del navegador a la API de Google.
+   La app nunca envía tu clave a ningún otro sitio.
+   Aviso: en la capa gratuita Google puede usar los prompts para mejorar sus
+   productos; en la de pago no. */
 
 const IA = (() => {
   const K = 'vertical.ia';
-  const MODELO = 'claude-opus-5';
+  const MODELO = 'gemini-2.5-flash';
+  const URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + MODELO + ':generateContent';
 
   let st = cargar();
   function cargar() {
@@ -1540,35 +1543,31 @@ const IA = (() => {
   /* Pregunta libre al entrenador. `contexto` es texto opcional (p. ej. la ficha
      del ejercicio actual) que se antepone a la pregunta. */
   async function preguntar(prompt, contexto) {
-    if (!st.key) throw new Error('Falta la clave de Anthropic.');
+    if (!st.key) throw new Error('Falta la clave de Gemini.');
     const contenido = (contexto ? contexto.trim() + '\n\n' : '') + prompt.trim();
     let r, j;
     try {
-      r = await fetch('https://api.anthropic.com/v1/messages', {
+      r = await fetch(URL, {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-api-key': st.key,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': st.key },
         body: JSON.stringify({
-          model: MODELO,
-          max_tokens: 4000,
-          system: SISTEMA,
-          messages: [{ role: 'user', content: contenido }]
+          system_instruction: { parts: [{ text: SISTEMA }] },
+          contents: [{ role: 'user', parts: [{ text: contenido }] }],
+          generationConfig: { maxOutputTokens: 4000, temperature: 0.7 }
         })
       });
     } catch (e) { throw new Error('Sin conexión con la IA.'); }
 
     try { j = await r.json(); } catch (e) { j = {}; }
     if (!r.ok) {
-      if (r.status === 401) throw new Error('La clave no es válida.');
-      if (r.status === 429) throw new Error('Has llegado al límite de tu cuenta. Prueba en un rato.');
-      throw new Error((j.error && j.error.message) || 'La IA ha devuelto un error.');
+      const msg = (j.error && j.error.message) || '';
+      if (r.status === 400 || r.status === 401 || r.status === 403) throw new Error(msg || 'La clave no es válida.');
+      if (r.status === 429) throw new Error('Has llegado al límite gratuito. Prueba en un rato.');
+      throw new Error(msg || 'La IA ha devuelto un error.');
     }
-    if (j.stop_reason === 'refusal') throw new Error('La IA no ha podido responder a esto.');
-    const txt = (j.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+    if (j.promptFeedback && j.promptFeedback.blockReason) throw new Error('La IA no ha podido responder a esto.');
+    const cand = (j.candidates || [])[0];
+    const txt = cand && cand.content && (cand.content.parts || []).map(p => p.text || '').join('').trim();
     return txt || 'La IA no ha devuelto respuesta.';
   }
 
@@ -2399,15 +2398,15 @@ function vAjustes(s) {
 
   if (!ie.hayClave) {
     ia.appendChild(el('div', 'card', `<div style="padding:14px 15px;font-size:14.5px;line-height:1.5;color:var(--chalk-dim)">
-      Pega tu clave de Anthropic y podrás pedirle al entrenador que te sustituya un ejercicio o te genere una rutina con tus palabras.<br><br>
-      <b style="color:var(--chalk)">1.</b> Crea una clave en el panel de Anthropic (console.anthropic.com).<br>
-      <b style="color:var(--chalk)">2.</b> Ponle un límite de gasto: cada consulta la pagas tú.<br>
+      Pega tu clave de Google (Gemini) y podrás pedirle al entrenador que te sustituya un ejercicio o te genere una rutina con tus palabras. Es gratis.<br><br>
+      <b style="color:var(--chalk)">1.</b> Entra en Google AI Studio (aistudio.google.com/apikey) con tu cuenta de Google.<br>
+      <b style="color:var(--chalk)">2.</b> Crea una clave (Get API key). La capa gratuita no pide tarjeta.<br>
       <b style="color:var(--chalk)">3.</b> Pégala aquí (se guarda solo en este móvil):</div>`));
     const kr = el('div', 'row');
     kr.innerHTML = `<span class="lb">Clave</span>`;
     const kf = el('span', 'fld');
     kf.style.cssText = 'flex:1;max-width:180px';
-    kf.innerHTML = `<label>anthropic</label><input type="password" placeholder="sk-ant-…" autocomplete="off" autocapitalize="off" spellcheck="false">`;
+    kf.innerHTML = `<label>gemini</label><input type="password" placeholder="AIza…" autocomplete="off" autocapitalize="off" spellcheck="false">`;
     const ki = kf.querySelector('input');
     ki.style.fontSize = '12px';
     ki.oninput = () => IA.setKey(ki.value);
@@ -2417,7 +2416,7 @@ function vAjustes(s) {
     kb.style.marginTop = '10px';
     kb.onclick = () => { if (!IA.estado.hayClave) { toast('Pega antes la clave.'); return; } render(); };
     ia.appendChild(kb);
-    ia.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">La clave viaja directa de tu móvil a Anthropic, a ningún otro sitio; da acceso a tu cuenta, así que ponle un límite de gasto. Quien tenga tu móvil desbloqueado podría leerla.</span>`));
+    ia.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">La clave viaja directa de tu móvil a Google, a ningún otro sitio. En la capa gratuita Google puede usar los prompts para mejorar sus productos. Quien tenga tu móvil desbloqueado podría leer la clave.</span>`));
   } else {
     const pf = el('div', 'card');
     pf.style.cssText = 'padding:12px 13px';
@@ -2445,7 +2444,7 @@ function vAjustes(s) {
     rm.style.marginTop = '10px';
     rm.onclick = () => { IA.borrarClave(); render(); toast('Clave quitada.'); };
     ia.appendChild(rm);
-    ia.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">Da consejo de entrenador; no reescribe el programa de la app (cada ejercicio tiene su animación propia). Cada consulta la pagas en tu cuenta de Anthropic.</span>`));
+    ia.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">Da consejo de entrenador; no reescribe el programa de la app (cada ejercicio tiene su animación propia). Usa la capa gratuita de Gemini.</span>`));
   }
   body.appendChild(ia);
 
