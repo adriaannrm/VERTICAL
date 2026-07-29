@@ -508,6 +508,34 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 /* GIF real del ejercicio (fondo blanco de la librería, encaja sin bandas) */
 .ex-media { width: 100%; height: 100%; object-fit: contain; display: block; background: #fff; }
 
+/* tira de días (Hoy) */
+.daystrip { display: flex; gap: 6px; }
+.daycell {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 2px 7px; border-radius: 12px;
+  background: var(--panel); border: 1px solid var(--hair-soft);
+}
+.daycell .dl { font-family: var(--f-mono); font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--chalk-mute); }
+.daycell .dn { font-family: var(--f-num); font-size: 15px; font-weight: 650; }
+.daycell .dm { font-family: var(--f-mono); font-size: 9px; height: 11px; line-height: 11px; color: var(--chalk-mute); }
+.daycell.gym { background: var(--leather-soft); border-color: color-mix(in srgb, var(--leather) 32%, transparent); }
+.daycell.gym .dm { color: var(--leather); font-weight: 700; }
+.daycell.now { outline: 2px solid var(--leather); outline-offset: -2px; }
+.daycell.now .dn { color: var(--leather); }
+.daycell.off { opacity: .55; }
+
+/* mapa muscular por sesión (barras) */
+.mbars { display: flex; flex-direction: column; gap: 9px; }
+.mbar { display: flex; align-items: center; gap: 10px; }
+.mb-name { flex: 0 0 86px; font-size: 13px; color: var(--chalk-dim); }
+.mb-track { flex: 1; height: 8px; border-radius: 4px; background: var(--court-2); overflow: hidden; }
+.mb-fill { display: block; height: 100%; background: var(--leather); border-radius: 4px; }
+.mb-n { flex: 0 0 auto; min-width: 18px; text-align: right; font-family: var(--f-num); font-size: 13px; font-weight: 650; color: var(--chalk-mute); }
+
+/* medalla de récord */
+.feed-rec { margin-left: 8px; font-size: 12.5px; font-weight: 650; color: var(--rim); }
+.setrow.pr .n { color: var(--rim); font-weight: 700; }
+
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
@@ -787,6 +815,16 @@ const HAS_GIF = new Set([
   'sentadilla', 'bulgara', 'rdl', 'pallof', 'plank_tap', 'hanging_leg',
   'banca', 'dominadas', 'militar', 'remo', 'medball_pass', 'facepull'
 ]);
+
+/* Grupo muscular principal de cada ejercicio, para el mapa muscular por sesión. */
+const MUSCLE = {
+  sentadilla: 'Cuádriceps', bulgara: 'Cuádriceps', rdl: 'Isquios', puente_uni: 'Glúteo',
+  boxjump: 'Cuádriceps', lateral: 'Glúteo', nordic: 'Isquios',
+  medball_rot: 'Core', pallof: 'Core', plank_tap: 'Core', hanging_leg: 'Core',
+  cable_chop: 'Core', superman: 'Espalda',
+  banca: 'Pecho', dominadas: 'Espalda', militar: 'Hombro', remo: 'Espalda',
+  medball_pass: 'Pecho', facepull: 'Hombro'
+};
 
 /* Los tres días del microciclo. En semana 2 se invierten A y C. */
 const DAYS = {
@@ -1835,6 +1873,62 @@ function mediaStage(id) {
     : `<canvas data-anim="${EX[id].anim}"></canvas>`;
 }
 
+/* Puntuación de una serie para comparar récords (más es mejor). */
+function setScore(x) { return (x.w > 0 ? x.w * 1000 + (x.r || 0) : (x.r || 0)); }
+
+/* Cuántos récords personales se batieron en la sesión guardada nº i. */
+function sessionRecords(i) {
+  const ses = S.log[i];
+  let count = 0;
+  for (const exId in ses.sets) {
+    const done = ses.sets[exId].filter(x => x.done);
+    if (!done.length) continue;
+    const sb = Math.max(...done.map(setScore));
+    let prev = 0;
+    for (let j = 0; j < i; j++) {
+      const s2 = S.log[j].sets[exId];
+      if (s2) s2.filter(x => x.done).forEach(x => { const s = setScore(x); if (s > prev) prev = s; });
+    }
+    if (sb > 0 && sb > prev) count++;
+  }
+  return count;
+}
+
+/* Tira de días de la semana actual (toque Hevy). */
+function daysStrip() {
+  const sec = el('section');
+  const row = el('div', 'daystrip');
+  const now = new Date();
+  const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const L = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mon); d.setDate(mon.getDate() + i);
+    const wp = WEEK_PLAN[i];
+    const isToday = d.toDateString() === now.toDateString();
+    const cls = 'daycell' + (isToday ? ' now' : '') + (wp.gym ? ' gym' : (wp.what === 'Descanso' ? ' off' : ''));
+    row.appendChild(el('div', cls, `<span class="dl">${L[i]}</span><span class="dn">${d.getDate()}</span><span class="dm">${wp.gym || (wp.what === 'Pista' ? '·' : '')}</span>`));
+  }
+  sec.appendChild(row);
+  return sec;
+}
+
+/* Mapa muscular de una rutina: series por grupo, en barras. */
+function muscleBars(items) {
+  const counts = {};
+  items.forEach(it => { const m = MUSCLE[it.ex] || 'Otros'; counts[m] = (counts[m] || 0) + it.sets; });
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) return null;
+  const max = Math.max(...entries.map(e => e[1]));
+  const sec = el('section');
+  sec.innerHTML = `<p class="sect-title">Músculos</p>`;
+  const wrap = el('div', 'mbars');
+  entries.forEach(([name, n]) => {
+    wrap.appendChild(el('div', 'mbar', `<span class="mb-name">${esc(name)}</span><span class="mb-track"><span class="mb-fill" style="width:${Math.max(8, Math.round(n / max * 100))}%"></span></span><span class="mb-n">${n}</span>`));
+  });
+  sec.appendChild(wrap);
+  return sec;
+}
+
 /* Marca: el aro y la red, que a la vez dibujan la V. */
 const LOGO = size => `<svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true" fill="none">
   <path d="M9.5 17h45" stroke="var(--chalk)" stroke-width="6" stroke-linecap="round"/>
@@ -1895,18 +1989,20 @@ function vInicio(s) {
   }
 
   const st = el('div', 'stack');
-  [...S.log].reverse().forEach(a => {
+  for (let i = S.log.length - 1; i >= 0; i--) {
+    const a = S.log[i];
     const d = DAYS[a.kind];
     const vol = Object.entries(a.sets).reduce((acc, [id, arr]) => acc + volume(arr) * (EX[id] && EX[id].perSide ? 2 : 1), 0);
     const done = Object.values(a.sets).flat().filter(x => x.done).length;
+    const recs = sessionRecords(i);
     const thumbs = d.items.slice(0, 4).map(it => `<span class="feed-th">${mediaThumb(it.ex, 1.3)}</span>`).join('');
     const card = el('div', 'card feed');
     card.innerHTML = `
-      <div class="feed-h"><strong>${esc(d.title)}</strong><span class="feed-d">${esc(fmtDate(a.date))} · Semana ${a.week} · Día ${a.slot}</span></div>
+      <div class="feed-h"><strong>${esc(d.title)}</strong>${recs ? `<span class="feed-rec">🥇 ${recs}</span>` : ''}<span class="feed-d">${esc(fmtDate(a.date))} · Semana ${a.week} · Día ${a.slot}</span></div>
       <div class="feed-m"><span><b>${done}</b> series</span><span><b>${vol >= 1000 ? nf(vol / 1000) + ' t' : nf(vol) + ' kg'}</b> volumen</span></div>
       <div class="feed-row">${thumbs}</div>`;
     st.appendChild(card);
-  });
+  }
   body.appendChild(st);
   s.appendChild(body);
 }
@@ -1964,6 +2060,7 @@ function vHoy(s) {
       : (wait === 0 ? '' : `Faltan ${wait} ${wait === 1 ? 'día' : 'días'}. Mientras, pista.`));
 
   const body = el('div', 'stack-lg');
+  body.appendChild(daysStrip());
 
   /* Tarjeta de la sesión */
   const card = el('section', 'card today');
@@ -1993,20 +2090,6 @@ function vHoy(s) {
   wu.innerHTML = `<p class="sect-title">Calentamiento</p>
     <div class="card" style="padding:14px 15px;font-size:14.5px;line-height:1.45;color:var(--chalk-dim)">${esc(d.warmup)}</div>`;
   body.appendChild(wu);
-
-  /* Semana */
-  const wk = el('section');
-  wk.innerHTML = `<p class="sect-title">Tu semana</p>`;
-  const grid = el('div', 'week');
-  WEEK_PLAN.forEach((w, i) => {
-    const dow = (i + 1) % 7;
-    const isGym = !!w.gym;
-    const cls = 'day' + (isGym ? ' gym' : '') + (w.what === 'Descanso' ? ' off' : '') + (dow === now ? ' now' : '');
-    grid.appendChild(el('div', cls, `<div class="d">${w.d}</div><div class="m">${isGym ? w.gym : (w.what === 'Pista' ? '●' : '—')}</div>`));
-  });
-  wk.appendChild(grid);
-  wk.appendChild(el('p', '', `<span style="font-family:var(--f-mono);font-size:11px;color:var(--chalk-mute)">A · B · C = gimnasio &nbsp;·&nbsp; ● = pista &nbsp;·&nbsp; — = descanso</span>`));
-  body.appendChild(wk);
 
   /* Ejercicios de hoy */
   const ex = el('section');
@@ -2224,7 +2307,11 @@ function setsEditor(exId, it, e) {
         set.done = true; save();
         row.classList.add('done');
         startRest(restFor(it));
-        if (arr.every(x => x.done)) toast('Ejercicio completo.');
+        /* ¿récord? el mejor histórico más lo ya cerrado hoy, sin contar esta serie. */
+        let best = 0; const pb = prOf(exId); if (pb) best = pb.score;
+        arr.forEach(x => { if (x.done && x !== set) { const sx = setScore(x); if (sx > best) best = sx; } });
+        if (setScore(set) > 0 && setScore(set) > best) { row.classList.add('pr'); toast('¡Récord! 🥇 ' + e.tag); }
+        else if (arr.every(x => x.done)) toast('Ejercicio completo.');
       } else { set.done = false; save(); row.classList.remove('done'); }
       refreshTick();
     };
@@ -2367,6 +2454,9 @@ function vLista(s, v) {
     <div><div class="k" style="font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)">Ejercicios</div><div style="font-family:var(--f-num);font-size:21px;font-weight:700">${d.items.length}</div></div>
     <div><div class="k" style="font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)">Duración</div><div style="font-family:var(--f-num);font-size:21px;font-weight:700">~${est}′</div></div>
   </div>`));
+
+  const mb = muscleBars(d.items);
+  if (mb) body.appendChild(mb);
 
   const list = el('div', 'stack');
   d.items.forEach(it => list.appendChild(exRow(it, null)));
