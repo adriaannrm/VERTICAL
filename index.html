@@ -1871,7 +1871,7 @@ const app = () => $('#app');
 function render() {
   const v = here();
   const s = el('main', 'screen');
-  ({ inicio: vInicio, hoy: vHoy, sesion: vSesion, resumen: vResumen, ex: vEx, biblio: vBiblio, lista: vLista, tu: vTu, ajustes: vAjustes })[v.n](s, v);
+  ({ inicio: vInicio, hoy: vHoy, sesion: vSesion, resumen: vResumen, ex: vEx, biblio: vBiblio, programa: vPrograma, biblioex: vEjercicios, lista: vLista, tu: vTu, ajustes: vAjustes })[v.n](s, v);
   const old = $('main.screen');
   if (old) old.replaceWith(s); else app().insertBefore(s, $('.tabbar'));
   paintTabs(v.n);
@@ -2112,16 +2112,62 @@ function vInicio(s) {
 }
 
 /* ---------- BIBLIOTECA (hub: Programas / Rutinas / Ejercicios) ---------- */
-function vBiblio(s, v) {
+function vBiblio(s) {
   header(s, 'Biblioteca', 'Tu biblioteca', null);
-  const t = v.tab || 'rutinas';
   const body = el('div', 'stack-lg');
-  body.appendChild(segmented([['rutinas', 'Rutinas'], ['ejercicios', 'Ejercicios']], t, k => { here().tab = k; render(); }));
-  const cont = el('div', 'stack-lg');
-  if (t === 'ejercicios') ejerciciosBody(cont);
-  else rutinasBody(cont);
-  body.appendChild(cont);
+
+  /* La rutina: VERTICAL. Al abrirla se ve lo que haces cada día. */
+  const prog = el('button', 'card');
+  prog.style.cssText = 'padding:16px;width:100%;text-align:left;display:block';
+  prog.innerHTML = `<span class="slot" style="font-family:var(--f-mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--leather)">Rutina</span>
+    <strong style="display:block;font-size:22px;margin-top:5px;letter-spacing:-.02em">VERTICAL</strong>
+    <span style="display:block;color:var(--chalk-dim);font-size:13.5px;margin-top:4px">Microciclo de 2 semanas · 3 días · 19 ejercicios</span>
+    <span style="display:block;color:var(--chalk-mute);font-size:12px;margin-top:8px">Toca para ver lo que haces cada día ›</span>`;
+  prog.onclick = () => go({ n: 'programa' });
+  body.appendChild(prog);
+
+  /* Biblioteca de ejercicios sueltos. */
+  const exc = el('button', 'card');
+  exc.style.cssText = 'padding:15px;width:100%;text-align:left;display:block';
+  exc.innerHTML = `<strong style="display:block;font-size:17px;letter-spacing:-.01em">Ejercicios</strong>
+    <span style="display:block;color:var(--chalk-dim);font-size:13px;margin-top:3px">Los 19 movimientos, cada uno con su demostración ›</span>`;
+  exc.onclick = () => go({ n: 'biblioex' });
+  body.appendChild(exc);
+
   body.appendChild(iaAsk());
+  s.appendChild(body);
+}
+
+/* ---------- RUTINA VERTICAL: lo que haces cada día ---------- */
+function vPrograma(s) {
+  header(s, 'Rutina', 'VERTICAL', 'Microciclo de 2 semanas en espejo. Esto es lo que haces cada día:', true);
+  const body = el('div', 'stack-lg');
+  const labels = { inferior: 'Día A', core: 'Día B', superior: 'Día C' };
+  ['inferior', 'core', 'superior'].forEach(kind => {
+    const d = DAYS[kind];
+    const est = Math.round(d.items.reduce((m, i) => m + i.sets * (restFor(i) + 45), 0) / 60);
+    const sec = el('section');
+    const head = el('button', 'card');
+    head.style.cssText = 'padding:14px 15px;width:100%;text-align:left;display:block';
+    head.innerHTML = `<span class="slot" style="font-family:var(--f-mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--leather)">${labels[kind]}</span>
+      <strong style="display:block;font-size:18px;margin-top:3px;letter-spacing:-.015em">${esc(d.title)}</strong>
+      <span style="display:block;color:var(--chalk-dim);font-size:13px;margin-top:3px">${d.items.length} ejercicios · ${d.items.reduce((n, i) => n + i.sets, 0)} series · ~${est} min · ver detalle ›</span>`;
+    head.onclick = () => go({ n: 'lista', kind });
+    sec.appendChild(head);
+    const list = el('div', 'stack');
+    list.style.marginTop = '10px';
+    d.items.forEach(it => list.appendChild(exRow(it, null)));
+    sec.appendChild(list);
+    body.appendChild(sec);
+  });
+  s.appendChild(body);
+}
+
+/* ---------- BIBLIOTECA · todos los ejercicios ---------- */
+function vEjercicios(s) {
+  header(s, 'Biblioteca', 'Ejercicios', 'Los 19 movimientos del programa.', true);
+  const body = el('div', 'stack-lg');
+  ejerciciosBody(body);
   s.appendChild(body);
 }
 
@@ -3053,7 +3099,7 @@ const TABS = [
   ['tu', 'Tú', '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/>']
 ];
 /* Qué pestaña resalta cada pantalla apilada. */
-const TAB_OF = { sesion: 'hoy', resumen: 'inicio', ex: 'biblio', lista: 'biblio', ajustes: 'tu' };
+const TAB_OF = { sesion: 'hoy', resumen: 'inicio', ex: 'biblio', lista: 'biblio', programa: 'biblio', biblioex: 'biblio', ajustes: 'tu' };
 function paintTabs(active) {
   const bar = $('.tabbar');
   if (!bar.children.length) {
