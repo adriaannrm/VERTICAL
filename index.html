@@ -2231,16 +2231,27 @@ function musculosBody(body, node) {
 
 /* ---------- HOY ---------- */
 function vHoy(s) {
-  const c = cur(), d = dayOf(c);
   const now = new Date().getDay();
+  /* Si hay una sesión a medias, la tarjeta muestra ESA (lo que "Continuar" retoma),
+     no el punto del ciclo, para que no se desincronicen. */
+  let c, d;
+  if (S.active) {
+    const a = S.active;
+    const ce = CYCLE.find(x => x.week === a.week && x.slot === a.slot) || cur();
+    c = { week: a.week, slot: a.slot, day: ce.day, kind: a.kind };
+    d = DAYS[a.kind];
+  } else {
+    c = cur(); d = dayOf(c);
+  }
   const isToday = now === c.day;
   const wait = (c.day - now + 7) % 7;
 
   brand(s);
   header(s, `Ciclo ${S.cycles + 1} · Semana ${c.week}`,
-    isToday ? '¡Hoy toca gimnasio!' : `Toca el ${DOWL[c.day]}`,
-    isToday ? 'Los pesos del ciclo anterior ya están puestos como referencia.'
-      : (wait === 0 ? '' : `Faltan ${wait} ${wait === 1 ? 'día' : 'días'}. Mientras, pista.`));
+    S.active ? 'Sesión en curso' : (isToday ? '¡Hoy toca gimnasio!' : `Toca el ${DOWL[c.day]}`),
+    S.active ? 'Sigue donde lo dejaste.'
+      : (isToday ? 'Los pesos del ciclo anterior ya están puestos como referencia.'
+        : (wait === 0 ? '' : `Faltan ${wait} ${wait === 1 ? 'día' : 'días'}. Mientras, pista.`)));
 
   const body = el('div', 'stack-lg');
   body.appendChild(daysStrip());
@@ -3041,7 +3052,10 @@ function vAjustes(s) {
   const cr = el('div', 'row');
   cr.innerHTML = `<span class="lb">Siguiente<br><span style="color:var(--chalk-mute);font-size:13px">Semana ${c.week} · Día ${c.slot} · ${DAYS[c.kind].title}</span></span>`;
   const cb = el('button', 'chip', 'Saltar');
-  cb.onclick = () => { S.idx++; if (S.idx % 6 === 0) S.cycles++; save(); render(); toast('Sesión saltada.'); };
+  cb.onclick = () => {
+    if (S.active) { toast('Termina o descarta la sesión en curso antes de saltar.'); return; }
+    S.idx++; if (S.idx % 6 === 0) S.cycles++; save(); render(); toast('Sesión saltada.');
+  };
   cr.appendChild(cb);
   cyc.appendChild(cr);
   body.appendChild(cyc);
