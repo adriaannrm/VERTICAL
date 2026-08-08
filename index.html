@@ -536,6 +536,29 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 .feed-rec { margin-left: 8px; font-size: 12.5px; font-weight: 650; color: var(--rim); }
 .setrow.pr .n { color: var(--rim); font-weight: 700; }
 
+/* figura del mapa muscular (librería body-muscles) — sobre blanco para que se
+   vea igual en claro y oscuro */
+.musfig { display: flex; gap: 10px; }
+.musfig-side {
+  flex: 1; min-width: 0; background: #fff; border-radius: 12px; padding: 8px 4px;
+  border: 1px solid var(--hair-soft);
+}
+.musfig-side svg { width: 100%; height: auto; display: block; }
+.muslegend {
+  display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px;
+  font-family: var(--f-mono); font-size: 10px; letter-spacing: .04em; color: var(--chalk-mute);
+}
+.mus-grad { flex: 0 0 120px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #f2d15e, #ef8b3c, #d64545); }
+
+/* navegador de meses (histórico) */
+.monthnav { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.mn-b {
+  width: 40px; height: 40px; flex: 0 0 auto; border-radius: 12px; border: 1px solid var(--hair);
+  font-size: 20px; color: var(--chalk-dim); display: flex; align-items: center; justify-content: center;
+}
+.mn-b:disabled { opacity: .35; }
+.mn-l { font-family: var(--f-num); font-size: 16px; font-weight: 650; min-width: 132px; text-align: center; text-transform: capitalize; }
+
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
@@ -566,6 +589,7 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
   </div>
 </div>
 
+<script src="body-muscles.umd.min.js"></script>
 <script>
 /* VERTICAL — catálogo de ejercicios y programa
    Fuente: Programa_Gimnasio_Baloncesto.docx (microciclo de 2 semanas en espejo)
@@ -1852,6 +1876,7 @@ function render() {
   if (old) old.replaceWith(s); else app().insertBefore(s, $('.tabbar'));
   paintTabs(v.n);
   mountCanvases(s);
+  mountMuscle(s);
   window.scrollTo(0, 0);
 }
 
@@ -1927,6 +1952,85 @@ function muscleBars(items) {
   });
   sec.appendChild(wrap);
   return sec;
+}
+
+/* Lista de series por grupo → barras (reutilizable para el ranking mensual). */
+function rankBars(entries) {
+  const wrap = el('div', 'mbars');
+  const max = entries.length ? entries[0][1] : 1;
+  entries.forEach(([name, n]) => {
+    wrap.appendChild(el('div', 'mbar', `<span class="mb-name">${esc(name)}</span><span class="mb-track"><span class="mb-fill" style="width:${Math.max(8, Math.round(n / max * 100))}%"></span></span><span class="mb-n">${n}</span>`));
+  });
+  return wrap;
+}
+
+/* ---------- MAPA MUSCULAR (librería body-muscles, Apache-2.0) ----------
+   Los grupos de VERTICAL se traducen a los músculos de la librería. */
+const MG = {
+  'Cuádriceps': ['quads-left', 'quads-right'],
+  'Isquios': ['hamstrings-lateral-left', 'hamstrings-lateral-right', 'hamstrings-medial-left', 'hamstrings-medial-right'],
+  'Glúteo': ['gluteus-maximus-left', 'gluteus-maximus-right', 'gluteus-medius-left', 'gluteus-medius-right'],
+  'Core': ['abs-upper-left', 'abs-upper-right', 'abs-lower-left', 'abs-lower-right', 'obliques-left', 'obliques-right'],
+  'Pecho': ['chest-upper-left', 'chest-upper-right', 'chest-lower-left', 'chest-lower-right'],
+  'Espalda': ['lats-upper-left', 'lats-upper-right', 'lats-mid-left', 'lats-mid-right', 'lats-lower-left', 'lats-lower-right', 'traps-mid-left', 'traps-mid-right', 'lower-back-erectors-left', 'lower-back-erectors-right'],
+  'Hombro': ['shoulder-front-left', 'shoulder-front-right', 'shoulder-side-left', 'shoulder-side-right', 'deltoid-rear-left', 'deltoid-rear-right']
+};
+const MES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const ymLabel = ym => { const p = ym.split('-'); return MES[+p[1] - 1] + ' ' + p[0]; };
+function ymAdd(ym, d) { let [y, m] = ym.split('-').map(Number); m += d; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return y + '-' + String(m).padStart(2, '0'); }
+
+/* Series por grupo desde una lista de items {ex, sets} (una rutina). */
+function groupCounts(items) {
+  const c = {};
+  items.forEach(it => { const m = MUSCLE[it.ex] || 'Otros'; c[m] = (c[m] || 0) + (it.sets || 0); });
+  return c;
+}
+/* Series por grupo de las sesiones GUARDADAS de un mes 'YYYY-MM'. */
+function monthCounts(ym) {
+  const c = {};
+  S.log.forEach(a => {
+    if ((a.date || '').slice(0, 7) !== ym) return;
+    for (const exId in a.sets) {
+      const done = a.sets[exId].filter(x => x.done).length;
+      if (!done) continue;
+      const m = MUSCLE[exId] || 'Otros'; c[m] = (c[m] || 0) + done;
+    }
+  });
+  return c;
+}
+/* counts {grupo:series} → bodyState {músculo:{intensity 0-10}} para el heatmap. */
+function bodyStateFrom(counts) {
+  const vals = Object.values(counts);
+  const max = vals.length ? Math.max(...vals) : 0;
+  const st = {};
+  for (const g in counts) {
+    if (!counts[g] || !MG[g]) continue;
+    const inten = max ? Math.max(2, Math.round(counts[g] / max * 10)) : 0;
+    MG[g].forEach(id => { st[id] = { intensity: inten }; });
+  }
+  return st;
+}
+/* Figura frontal + posterior. Se instancia en mountMuscle, ya montada en el DOM. */
+function muscleFigure(counts) {
+  const wrap = el('div', 'musfig');
+  ['FRONT', 'BACK'].forEach(view => {
+    const c = el('div', 'musfig-side');
+    c.setAttribute('data-muscle', '');
+    c._muscle = { view, counts };
+    wrap.appendChild(c);
+  });
+  return wrap;
+}
+function mountMuscle(root) {
+  if (!window.BodyMuscles) return;
+  root.querySelectorAll('[data-muscle]').forEach(c => {
+    try {
+      new BodyMuscles.BodyChart(c, {
+        view: BodyMuscles.ViewSide[c._muscle.view],
+        bodyState: bodyStateFrom(c._muscle.counts)
+      });
+    } catch (e) { }
+  });
 }
 
 /* Marca: el aro y la red, que a la vez dibujan la V. */
@@ -2010,13 +2114,12 @@ function vInicio(s) {
 /* ---------- BIBLIOTECA (hub: Programas / Rutinas / Ejercicios) ---------- */
 function vBiblio(s, v) {
   header(s, 'Biblioteca', 'Tu biblioteca', null);
-  const t = v.tab || 'programas';
+  const t = v.tab || 'rutinas';
   const body = el('div', 'stack-lg');
-  body.appendChild(segmented([['programas', 'Programas'], ['rutinas', 'Rutinas'], ['ejercicios', 'Ejercicios']], t, k => { here().tab = k; render(); }));
+  body.appendChild(segmented([['rutinas', 'Rutinas'], ['ejercicios', 'Ejercicios']], t, k => { here().tab = k; render(); }));
   const cont = el('div', 'stack-lg');
-  if (t === 'programas') programaBody(cont);
-  else if (t === 'rutinas') rutinasBody(cont);
-  else ejerciciosBody(cont);
+  if (t === 'ejercicios') ejerciciosBody(cont);
+  else rutinasBody(cont);
   body.appendChild(cont);
   body.appendChild(iaAsk());
   s.appendChild(body);
@@ -2037,13 +2140,47 @@ function vTu(s, v) {
 
   const t = v.tab || 'resumen';
   const body = el('div', 'stack-lg');
-  body.appendChild(segmented([['resumen', 'Resumen'], ['ejercicios', 'Ejercicios'], ['medidas', 'Medidas']], t, k => { here().tab = k; render(); }));
+  body.appendChild(segmented([['resumen', 'Resumen'], ['musculos', 'Músculos'], ['ejercicios', 'Ejercicios'], ['medidas', 'Medidas']], t, k => { here().tab = k; render(); }));
   const cont = el('div', 'stack-lg');
   if (t === 'resumen') progResumen(cont);
+  else if (t === 'musculos') musculosBody(cont, v);
   else if (t === 'ejercicios') tuEjercicios(cont);
   else progMedidas(cont);
   body.appendChild(cont);
   s.appendChild(body);
+}
+
+/* ---------- TÚ · Músculos (mes actual + histórico) ---------- */
+function musculosBody(body, node) {
+  const nowYm = today().slice(0, 7);
+  node.ym = node.ym || nowYm;
+  const ym = node.ym;
+
+  const nav = el('div', 'monthnav');
+  const prev = el('button', 'mn-b', '‹');
+  const next = el('button', 'mn-b', '›');
+  next.disabled = ym >= nowYm;
+  prev.onclick = () => { node.ym = ymAdd(ym, -1); render(); };
+  next.onclick = () => { node.ym = ymAdd(ym, 1); render(); };
+  nav.append(prev, el('span', 'mn-l', ymLabel(ym)), next);
+  body.appendChild(nav);
+
+  const counts = monthCounts(ym);
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) {
+    body.appendChild(el('div', 'empty', 'No hay sesiones cerradas este mes.<br>Cierra entrenamientos y verás qué músculos trabajas más.'));
+    return;
+  }
+
+  const fig = el('section');
+  fig.appendChild(muscleFigure(counts));
+  fig.appendChild(el('div', 'muslegend', `<span>menos</span><span class="mus-grad"></span><span>más</span>`));
+  body.appendChild(fig);
+
+  const rank = el('section');
+  rank.innerHTML = `<p class="sect-title">Más trabajados este mes</p>`;
+  rank.appendChild(rankBars(entries));
+  body.appendChild(rank);
 }
 
 /* ---------- HOY ---------- */
@@ -2410,8 +2547,13 @@ function programaBody(body) {
   body.appendChild(notes);
 }
 
-/* ---------- BIBLIOTECA · Rutinas ---------- */
+/* ---------- BIBLIOTECA · Rutinas (incluye el resumen del programa) ---------- */
 function rutinasBody(body) {
+  body.appendChild(el('div', 'card', `<div style="padding:15px">
+    <span class="slot" style="font-family:var(--f-mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--leather)">Programa · baloncesto</span>
+    <strong style="display:block;font-size:20px;margin-top:5px;letter-spacing:-.02em">VERTICAL</strong>
+    <span style="display:block;color:var(--chalk-dim);font-size:13.5px;margin-top:4px">Microciclo de 2 semanas en espejo · 3 rutinas · 19 ejercicios</span></div>`));
+
   const st = el('div', 'stack');
   ['inferior', 'core', 'superior'].forEach(kind => {
     const d = DAYS[kind];
@@ -2427,6 +2569,18 @@ function rutinasBody(body) {
     st.appendChild(b);
   });
   body.appendChild(st);
+
+  const notes = el('section');
+  notes.innerHTML = `<p class="sect-title">Progresión</p>`;
+  const ul = el('ul', 'cues');
+  [
+    'Sube carga cuando cierres el tope de repeticiones en todas las series con técnica correcta (RPE 7-8: te sobran 2-3 reps).',
+    'Repite el microciclo de 2 semanas durante 4-6 ciclos (8-12 semanas) antes de reevaluar volumen e intensidad.',
+    'El sábado es el mejor día para apretar: el domingo descansas entero antes del lunes en pista.',
+    'Si llegas con las piernas muy cargadas antes de un partido, recorta volumen de box jump y deja la fuerza base intacta.'
+  ].forEach((c, i) => ul.appendChild(el('li', '', `<b>${String(i + 1).padStart(2, '0')}</b><span>${esc(c)}</span>`)));
+  notes.appendChild(ul);
+  body.appendChild(notes);
 }
 
 /* ---------- BIBLIOTECA · Ejercicios (los 19) ---------- */
@@ -2455,8 +2609,12 @@ function vLista(s, v) {
     <div><div class="k" style="font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)">Duración</div><div style="font-family:var(--f-num);font-size:21px;font-weight:700">~${est}′</div></div>
   </div>`));
 
-  const mb = muscleBars(d.items);
-  if (mb) body.appendChild(mb);
+  if (Object.keys(groupCounts(d.items)).length) {
+    const ms = el('section');
+    ms.innerHTML = `<p class="sect-title">Músculos de la sesión</p>`;
+    ms.appendChild(muscleFigure(groupCounts(d.items)));
+    body.appendChild(ms);
+  }
 
   const list = el('div', 'stack');
   d.items.forEach(it => list.appendChild(exRow(it, null)));

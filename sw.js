@@ -4,7 +4,7 @@
 
    Para forzar una actualización tras cambiar la app, sube CACHE una versión. */
 
-const CACHE = 'vertical-v18';
+const CACHE = 'vertical-v19';
 
 /* Peticion que salta la cache HTTP del navegador.
    GitHub Pages sirve con 10 min de cache, asi que sin esto el refresco pedia el
@@ -14,6 +14,7 @@ const fresco = url => fetch(new Request(url, { cache: 'reload', credentials: 'sa
 const ASSETS = [
   './',
   './index.html',
+  './body-muscles.umd.min.js',
   './manifest.webmanifest',
   './icon-180.png',
   './icon-192.png',
