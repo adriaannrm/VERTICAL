@@ -2112,28 +2112,28 @@ function vInicio(s) {
 }
 
 /* ---------- BIBLIOTECA (hub: Programas / Rutinas / Ejercicios) ---------- */
-function vBiblio(s) {
+function vBiblio(s, v) {
   header(s, 'Biblioteca', 'Tu biblioteca', null);
+  const t = v.tab || 'rutinas';
   const body = el('div', 'stack-lg');
+  body.appendChild(segmented([['rutinas', 'Rutinas'], ['ejercicios', 'Ejercicios']], t, k => { here().tab = k; render(); }));
 
-  /* La rutina: VERTICAL. Al abrirla se ve lo que haces cada día. */
-  const prog = el('button', 'card');
-  prog.style.cssText = 'padding:16px;width:100%;text-align:left;display:block';
-  prog.innerHTML = `<span class="slot" style="font-family:var(--f-mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--leather)">Rutina</span>
-    <strong style="display:block;font-size:22px;margin-top:5px;letter-spacing:-.02em">VERTICAL</strong>
-    <span style="display:block;color:var(--chalk-dim);font-size:13.5px;margin-top:4px">Microciclo de 2 semanas · 3 días · 19 ejercicios</span>
-    <span style="display:block;color:var(--chalk-mute);font-size:12px;margin-top:8px">Toca para ver lo que haces cada día ›</span>`;
-  prog.onclick = () => go({ n: 'programa' });
-  body.appendChild(prog);
-
-  /* Biblioteca de ejercicios sueltos. */
-  const exc = el('button', 'card');
-  exc.style.cssText = 'padding:15px;width:100%;text-align:left;display:block';
-  exc.innerHTML = `<strong style="display:block;font-size:17px;letter-spacing:-.01em">Ejercicios</strong>
-    <span style="display:block;color:var(--chalk-dim);font-size:13px;margin-top:3px">Los 19 movimientos, cada uno con su demostración ›</span>`;
-  exc.onclick = () => go({ n: 'biblioex' });
-  body.appendChild(exc);
-
+  const cont = el('div', 'stack-lg');
+  if (t === 'ejercicios') {
+    /* Los 19 ejercicios de la app, independientes de la rutina. */
+    ejerciciosBody(cont);
+  } else {
+    /* Rutinas: una sola, VERTICAL. Al abrirla se ve lo que haces cada día. */
+    const prog = el('button', 'card');
+    prog.style.cssText = 'padding:16px;width:100%;text-align:left;display:block';
+    prog.innerHTML = `<span class="slot" style="font-family:var(--f-mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--leather)">Rutina</span>
+      <strong style="display:block;font-size:22px;margin-top:5px;letter-spacing:-.02em">VERTICAL</strong>
+      <span style="display:block;color:var(--chalk-dim);font-size:13.5px;margin-top:4px">Microciclo de 2 semanas · 3 días · 19 ejercicios</span>
+      <span style="display:block;color:var(--chalk-mute);font-size:12px;margin-top:8px">Toca para ver lo que haces cada día ›</span>`;
+    prog.onclick = () => go({ n: 'programa' });
+    cont.appendChild(prog);
+  }
+  body.appendChild(cont);
   body.appendChild(iaAsk());
   s.appendChild(body);
 }
