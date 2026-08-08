@@ -559,6 +559,46 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 .mn-b:disabled { opacity: .35; }
 .mn-l { font-family: var(--f-num); font-size: 16px; font-weight: 650; min-width: 132px; text-align: center; text-transform: capitalize; }
 
+/* ---------- Entrenador IA: botón flotante + chat ---------- */
+.fab-ia {
+  position: fixed; z-index: 50; right: 16px;
+  bottom: calc(82px + env(safe-area-inset-bottom));
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--leather); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .3);
+  transition: transform .12s ease;
+}
+.fab-ia svg { width: 26px; height: 26px; }
+.fab-ia:active { transform: scale(.92); }
+
+.iachat {
+  position: fixed; inset: 0; z-index: 80; background: rgba(0, 0, 0, .45);
+  opacity: 0; pointer-events: none; transition: opacity .22s ease;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.iachat.on { opacity: 1; pointer-events: auto; }
+.iachat-panel {
+  width: 100%; max-width: 720px; height: 88vh; height: 88dvh;
+  background: var(--court); border-radius: 20px 20px 0 0; border-top: 1px solid var(--hair);
+  display: flex; flex-direction: column; overflow: hidden;
+  transform: translateY(100%); transition: transform .28s cubic-bezier(.32, .72, 0, 1);
+}
+.iachat.on .iachat-panel { transform: none; }
+.iachat-hd { display: flex; align-items: center; justify-content: space-between; padding: 14px 15px; border-bottom: 1px solid var(--hair-soft); }
+.iachat-hd strong { font-size: 16px; letter-spacing: -.01em; }
+.iachat-x { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--hair); color: var(--chalk-dim); font-size: 15px; display: flex; align-items: center; justify-content: center; }
+.iachat-msgs { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 15px; display: flex; flex-direction: column; gap: 10px; }
+.msg { max-width: 85%; padding: 10px 13px; border-radius: 16px; font-size: 14.5px; line-height: 1.45; }
+.msg.ia { align-self: flex-start; background: var(--panel); border: 1px solid var(--hair-soft); color: var(--chalk); border-bottom-left-radius: 5px; }
+.msg.me { align-self: flex-end; background: var(--leather); color: #fff; border-bottom-right-radius: 5px; }
+.msg.typing { color: var(--chalk-mute); letter-spacing: 3px; }
+.iachat-sug { display: flex; flex-direction: column; gap: 7px; align-items: flex-start; }
+.iachat-chip { text-align: left; padding: 9px 13px; border-radius: 12px; border: 1px solid var(--hair); background: var(--panel); color: var(--chalk-dim); font-size: 13.5px; }
+.iachat-in { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--hair-soft); }
+.iachat-in .ia-in { flex: 1; min-height: 24px; max-height: 120px; }
+.iachat-send { width: 42px; height: 42px; flex: 0 0 auto; border-radius: 50%; background: var(--leather); color: #fff; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
@@ -588,6 +628,10 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
     </span>
   </div>
 </div>
+
+<button class="fab-ia" id="fab-ia" aria-label="Entrenador IA">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.5L3 21l2-5.6A8.5 8.5 0 1 1 21 11.5z"/><circle cx="8.5" cy="11.5" r="1"/><circle cx="12" cy="11.5" r="1"/><circle cx="15.5" cy="11.5" r="1"/></svg>
+</button>
 
 <script src="body-muscles.umd.min.js"></script>
 <script>
@@ -1627,6 +1671,7 @@ const IA = (() => {
   const URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + MODELO + ':generateContent';
 
   let st = cargar();
+  let conv = [];   // conversación en curso (no se guarda entre sesiones)
   function cargar() {
     try { return Object.assign({ key: '' }, JSON.parse(localStorage.getItem(K) || '{}')); }
     catch (e) { return { key: '' }; }
@@ -1694,11 +1739,44 @@ const IA = (() => {
     return txt || 'La IA no ha devuelto respuesta.';
   }
 
+  /* Chat con memoria: manda toda la conversación a Gemini y guarda la respuesta. */
+  async function chat(texto) {
+    if (!st.key) throw new Error('Falta la clave de Gemini.');
+    conv.push({ role: 'user', parts: [{ text: texto.trim() }] });
+    let r, j;
+    try {
+      r = await fetch(URL, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': st.key },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SISTEMA }] },
+          contents: conv,
+          generationConfig: { maxOutputTokens: 4000, temperature: 0.7 }
+        })
+      });
+    } catch (e) { conv.pop(); throw new Error('Sin conexión con la IA.'); }
+    try { j = await r.json(); } catch (e) { j = {}; }
+    if (!r.ok) {
+      conv.pop();
+      const msg = (j.error && j.error.message) || '';
+      if (r.status === 400 || r.status === 401 || r.status === 403) throw new Error(msg || 'La clave no es válida.');
+      if (r.status === 429) throw new Error('Has llegado al límite gratuito. Prueba en un rato.');
+      throw new Error(msg || 'La IA ha devuelto un error.');
+    }
+    if (j.promptFeedback && j.promptFeedback.blockReason) { conv.pop(); throw new Error('La IA no ha podido responder a esto.'); }
+    const cand = (j.candidates || [])[0];
+    const txt = (cand && cand.content && (cand.content.parts || []).map(p => p.text || '').join('').trim()) || 'La IA no ha devuelto respuesta.';
+    conv.push({ role: 'model', parts: [{ text: txt }] });
+    return txt;
+  }
+
   return {
     get estado() { return { hayClave: !!st.key, modelo: MODELO }; },
+    get historial() { return conv.map(m => ({ role: m.role, text: m.parts.map(p => p.text).join('') })); },
     setKey(v) { st.key = (v || '').trim(); guardar(); },
     borrarClave() { st.key = ''; guardar(); },
-    preguntar
+    reset() { conv = []; },
+    chat, preguntar
   };
 })();
 
@@ -2134,7 +2212,6 @@ function vBiblio(s, v) {
     cont.appendChild(prog);
   }
   body.appendChild(cont);
-  body.appendChild(iaAsk());
   s.appendChild(body);
 }
 
@@ -3180,6 +3257,73 @@ function pintarPista(p) {
     `<span>${esc(p.titulo)}<br><span style="color:var(--chalk-mute)">${esc(p.artista || '')}</span></span>`;
 }
 
+/* ============ chat del Entrenador IA (botón flotante) ============ */
+function openIAChat() {
+  const old = document.getElementById('iachat'); if (old) old.remove();
+  const ov = el('div', 'iachat'); ov.id = 'iachat';
+  const panel = el('div', 'iachat-panel');
+  panel.innerHTML = `
+    <div class="iachat-hd">
+      <strong>Entrenador IA</strong>
+      <div style="display:flex;gap:6px">
+        <button class="iachat-x" data-act="reset" aria-label="Nueva conversación">↺</button>
+        <button class="iachat-x" data-act="close" aria-label="Cerrar">✕</button>
+      </div>
+    </div>
+    <div class="iachat-msgs"></div>
+    <div class="iachat-in"></div>`;
+  ov.appendChild(panel);
+  document.body.appendChild(ov);
+
+  const msgs = panel.querySelector('.iachat-msgs');
+  const inrow = panel.querySelector('.iachat-in');
+  const close = () => { ov.classList.remove('on'); setTimeout(() => ov.remove(), 250); };
+  panel.querySelector('[data-act="close"]').onclick = close;
+  panel.querySelector('[data-act="reset"]').onclick = () => { IA.reset(); paint(); };
+  ov.onclick = e => { if (e.target === ov) close(); };
+
+  const bubble = (role, text) => `<div class="msg ${role === 'user' ? 'me' : 'ia'}">${esc(text).replace(/\n/g, '<br>')}</div>`;
+
+  async function send(text) {
+    text = (text || '').trim();
+    if (!text || !IA.estado.hayClave) return;
+    msgs.innerHTML = IA.historial.map(m => bubble(m.role, m.text)).join('') + bubble('user', text) + `<div class="msg ia typing">···</div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+    inrow.querySelectorAll('textarea,button').forEach(e => e.disabled = true);
+    try { await IA.chat(text); } catch (err) { toast(err.message || 'No se ha podido.'); }
+    paint();
+  }
+
+  function paint() {
+    if (!IA.estado.hayClave) {
+      msgs.innerHTML = `<div class="msg ia">Para hablar con el entrenador necesitas tu clave gratuita de Gemini (Google AI Studio).</div>`;
+      inrow.innerHTML = `<button class="btn" style="width:100%">Configurar en Ajustes</button>`;
+      inrow.querySelector('button').onclick = () => { close(); go({ n: 'ajustes' }); };
+      return;
+    }
+    const h = IA.historial;
+    if (!h.length) {
+      msgs.innerHTML = `<div class="msg ia">¡Hola! Soy tu entrenador. Pídeme sustituir un ejercicio o generar una rutina y te lo adapto al baloncesto.</div><div class="iachat-sug"></div>`;
+      const sug = msgs.querySelector('.iachat-sug');
+      ['Sustituye la búlgara por algo sin banco', 'Rutina de empuje para casa', 'Alternativa al box jump sin cajón'].forEach(x => {
+        const c = el('button', 'iachat-chip', esc(x));
+        c.onclick = () => send(x);
+        sug.appendChild(c);
+      });
+    } else {
+      msgs.innerHTML = h.map(m => bubble(m.role, m.text)).join('');
+    }
+    inrow.innerHTML = `<textarea class="ia-in" rows="1" placeholder="Escribe tu mensaje…"></textarea><button class="iachat-send" aria-label="Enviar">➤</button>`;
+    const ta = inrow.querySelector('textarea');
+    inrow.querySelector('.iachat-send').onclick = () => send(ta.value);
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(ta.value); } });
+    msgs.scrollTop = msgs.scrollHeight;
+    setTimeout(() => ta.focus(), 60);
+  }
+  paint();
+  requestAnimationFrame(() => ov.classList.add('on'));
+}
+
 /* ============ arranque ============ */
 function boot() {
   installMeta();
@@ -3187,6 +3331,7 @@ function boot() {
   applyTheme();
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { applyTheme(); SPOT.repintar(); });
   $('#rest-skip').onclick = stopRest;
+  $('#fab-ia').onclick = openIAChat;
   $('#rest-add').onclick = () => { R.endAt += 30000; R.total = Math.max(R.total, restante()); paintRest(); };
   if (S.active) stack = [{ n: 'hoy' }];
   render();
