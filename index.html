@@ -1871,7 +1871,7 @@ const app = () => $('#app');
 function render() {
   const v = here();
   const s = el('main', 'screen');
-  ({ inicio: vInicio, hoy: vHoy, sesion: vSesion, ex: vEx, biblio: vBiblio, lista: vLista, tu: vTu, ajustes: vAjustes })[v.n](s, v);
+  ({ inicio: vInicio, hoy: vHoy, sesion: vSesion, resumen: vResumen, ex: vEx, biblio: vBiblio, lista: vLista, tu: vTu, ajustes: vAjustes })[v.n](s, v);
   const old = $('main.screen');
   if (old) old.replaceWith(s); else app().insertBefore(s, $('.tabbar'));
   paintTabs(v.n);
@@ -2309,9 +2309,42 @@ function finish() {
   save();
   stopRest();
   beep(2);
-  stack = [{ n: 'hoy' }];
+  stack = [{ n: 'resumen', logIdx: S.log.length - 1 }];
   render();
-  toast('Sesión guardada. Buen trabajo.');
+}
+
+/* ---------- RESUMEN AL TERMINAR ---------- */
+function vResumen(s, v) {
+  const a = S.log[v.logIdx];
+  if (!a) { tab('inicio'); return; }
+  const d = DAYS[a.kind];
+  header(s, '¡Sesión guardada!', d.title, 'Buen trabajo. Esto es lo que has movido hoy.');
+  const body = el('div', 'stack-lg');
+
+  const done = Object.values(a.sets).flat().filter(x => x.done).length;
+  const vol = Object.entries(a.sets).reduce((acc, [id, arr]) => acc + volume(arr) * (EX[id] && EX[id].perSide ? 2 : 1), 0);
+  const recs = sessionRecords(v.logIdx);
+  const kcss = 'font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)';
+  const vcss = 'font-family:var(--f-num);font-size:22px;font-weight:700';
+  body.appendChild(el('div', 'card', `<div style="padding:15px;display:flex;justify-content:space-around;text-align:center">
+    <div><div style="${kcss}">Series</div><div style="${vcss}">${done}</div></div>
+    <div><div style="${kcss}">Volumen</div><div style="${vcss}">${vol >= 1000 ? nf(vol / 1000) + ' t' : nf(vol) + ' kg'}</div></div>
+    <div><div style="${kcss}">Récords</div><div style="${vcss}">${recs ? '🥇 ' + recs : '—'}</div></div>
+  </div>`));
+
+  const items = Object.keys(a.sets).map(ex => ({ ex, sets: a.sets[ex].filter(x => x.done).length }));
+  const counts = groupCounts(items);
+  if (Object.keys(counts).length) {
+    const ms = el('section');
+    ms.innerHTML = `<p class="sect-title">Músculos trabajados</p>`;
+    ms.appendChild(muscleFigure(counts));
+    body.appendChild(ms);
+  }
+
+  const btn = el('button', 'btn', 'Hecho');
+  btn.onclick = () => tab('inicio');
+  body.appendChild(btn);
+  s.appendChild(body);
 }
 
 /* ---------- FICHA DE EJERCICIO ---------- */
@@ -3020,7 +3053,7 @@ const TABS = [
   ['tu', 'Tú', '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/>']
 ];
 /* Qué pestaña resalta cada pantalla apilada. */
-const TAB_OF = { sesion: 'hoy', ex: 'biblio', lista: 'biblio', ajustes: 'tu' };
+const TAB_OF = { sesion: 'hoy', resumen: 'inicio', ex: 'biblio', lista: 'biblio', ajustes: 'tu' };
 function paintTabs(active) {
   const bar = $('.tabbar');
   if (!bar.children.length) {
