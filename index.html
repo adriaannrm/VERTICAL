@@ -2043,7 +2043,7 @@ const LOGO = size => `<svg viewBox="0 0 64 64" width="${size}" height="${size}" 
 function brand(s) {
   const b = el('div');
   b.style.cssText = 'display:flex;align-items:center;gap:9px;padding:calc(env(safe-area-inset-top) + 14px) 0 0';
-  b.innerHTML = `${LOGO(24)}<span style="font-weight:800;font-size:15px;letter-spacing:.19em">VERTICAL</span>`;
+  b.innerHTML = `<img src="brand.png" alt="" style="height:24px;width:auto;display:block"><span style="font-weight:800;font-size:15px;letter-spacing:.19em">VERTICAL</span>`;
   s.appendChild(b);
 }
 

@@ -4,7 +4,7 @@
 
    Para forzar una actualización tras cambiar la app, sube CACHE una versión. */
 
-const CACHE = 'vertical-v19';
+const CACHE = 'vertical-v20';
 
 /* Peticion que salta la cache HTTP del navegador.
    GitHub Pages sirve con 10 min de cache, asi que sin esto el refresco pedia el
@@ -18,7 +18,8 @@ const ASSETS = [
   './manifest.webmanifest',
   './icon-180.png',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './brand.png'
 ];
 
 /* skipWaiting() se llama suelto, NO devuelto dentro de waitUntil: si se
