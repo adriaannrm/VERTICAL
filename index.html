@@ -620,6 +620,26 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 .sess-dur { display: flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: 12px; color: var(--chalk-mute); }
 #sess-timer { font-family: var(--f-num); font-size: 15px; font-weight: 650; color: var(--chalk); font-variant-numeric: tabular-nums; }
 
+/* constancia (heatmap de semanas) */
+.heatrow { display: flex; gap: 5px; margin: 13px 0 7px; }
+.heat { flex: 1; height: 26px; border-radius: 5px; background: var(--court-2); }
+.heat.l1 { background: color-mix(in srgb, var(--leather) 32%, var(--court-2)); }
+.heat.l2 { background: color-mix(in srgb, var(--leather) 62%, var(--court-2)); }
+.heat.l3 { background: var(--leather); }
+
+/* logros (medallas) */
+.badges { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.badge {
+  padding: 14px 12px; border-radius: 14px; text-align: center;
+  background: var(--panel); border: 1px solid var(--hair-soft); opacity: .5;
+  transition: opacity .2s ease, border-color .2s ease;
+}
+.badge.on { opacity: 1; border-color: color-mix(in srgb, var(--leather) 35%, transparent); }
+.badge-ic { display: block; font-size: 26px; line-height: 1; filter: grayscale(1); }
+.badge.on .badge-ic { filter: none; }
+.badge-t { display: block; font-size: 14px; font-weight: 650; letter-spacing: -.01em; margin-top: 7px; }
+.badge-s { display: block; font-family: var(--f-mono); font-size: 9.5px; color: var(--chalk-mute); text-transform: uppercase; letter-spacing: .04em; margin-top: 3px; }
+
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
@@ -2071,6 +2091,63 @@ function rankBars(entries) {
   return wrap;
 }
 
+/* ---------- Constancia, racha y logros ---------- */
+const mondayOf = dateStr => { const d = new Date(dateStr + 'T12:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toISOString().slice(0, 10); };
+const prevWeek = mon => { const d = new Date(mon + 'T12:00'); d.setDate(d.getDate() - 7); return d.toISOString().slice(0, 10); };
+function weekCounts() { const w = {}; S.log.forEach(a => { if (a.date) { const k = mondayOf(a.date); w[k] = (w[k] || 0) + 1; } }); return w; }
+function streakWeeks() {
+  const w = weekCounts();
+  let wk = mondayOf(today());
+  if (!w[wk]) wk = prevWeek(wk);           // la semana en curso puede estar vacía aún: no rompe la racha
+  let n = 0;
+  while (w[wk]) { n++; wk = prevWeek(wk); }
+  return n;
+}
+function totalRecords() { let t = 0; for (let i = 0; i < S.log.length; i++) t += sessionRecords(i); return t; }
+function jumpGain() { if (S.jump.length < 2) return 0; const c = S.jump.map(x => x.cm); return Math.max(...c) - Math.min(...c); }
+function achievements() {
+  const sess = S.log.length, recs = totalRecords(), streak = streakWeeks(), jg = jumpGain();
+  return [
+    { icon: '🏁', title: 'Primer paso', sub: 'Cierra tu 1ª sesión', done: sess >= 1 },
+    { icon: '💪', title: '10 sesiones', sub: '10 entrenamientos', done: sess >= 10 },
+    { icon: '🔁', title: 'Primer ciclo', sub: 'Completa un microciclo', done: S.cycles >= 1 },
+    { icon: '🔥', title: 'Racha de 4', sub: '4 semanas seguidas', done: streak >= 4 },
+    { icon: '🥇', title: '5 récords', sub: 'Bate 5 marcas', done: recs >= 5 },
+    { icon: '🚀', title: '25 sesiones', sub: '25 entrenamientos', done: sess >= 25 },
+    { icon: '⛹️', title: '+5 cm de salto', sub: 'Mejora el salto 5 cm', done: jg >= 5 },
+    { icon: '🏆', title: '50 sesiones', sub: 'Medio centenar', done: sess >= 50 }
+  ];
+}
+function constanciaSection() {
+  const streak = streakWeeks();
+  const w = weekCounts();
+  const cells = [];
+  let wk = mondayOf(today());
+  for (let i = 0; i < 12; i++) { cells.unshift(Math.min(3, w[wk] || 0)); wk = prevWeek(wk); }
+  const sec = el('section');
+  sec.innerHTML = `<p class="sect-title">Constancia</p>`;
+  const card = el('div', 'card');
+  card.style.cssText = 'padding:15px';
+  card.innerHTML = `
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <span style="font-family:var(--f-num);font-size:30px;font-weight:750">${streak}</span>
+      <span style="color:var(--chalk-dim);font-size:14px">semana${streak === 1 ? '' : 's'} de racha 🔥</span>
+    </div>
+    <div class="heatrow">${cells.map(n => `<span class="heat l${n}"></span>`).join('')}</div>
+    <span style="font-family:var(--f-mono);font-size:10px;color:var(--chalk-mute)">últimas 12 semanas</span>`;
+  sec.appendChild(card);
+  return sec;
+}
+function logrosSection() {
+  const sec = el('section');
+  sec.innerHTML = `<p class="sect-title">Logros</p>`;
+  const grid = el('div', 'badges');
+  achievements().forEach(a => grid.appendChild(el('div', 'badge' + (a.done ? ' on' : ''),
+    `<span class="badge-ic">${a.icon}</span><span class="badge-t">${esc(a.title)}</span><span class="badge-s">${esc(a.sub)}</span>`)));
+  sec.appendChild(grid);
+  return sec;
+}
+
 /* ---------- MAPA MUSCULAR (librería body-muscles, Apache-2.0) ----------
    Los grupos de VERTICAL se traducen a los músculos de la librería. */
 const MG = {
@@ -2863,6 +2940,7 @@ function vLista(s, v) {
 
 /* ---------- TÚ · Resumen (antes Progreso) ---------- */
 function progResumen(body) {
+  body.appendChild(constanciaSection());
   const k = el('div', 'kpis');
   const sess = S.log.length;
   /* Los unilaterales (perSide) se hacen a las dos piernas/lados con la misma
@@ -2881,6 +2959,7 @@ function progResumen(body) {
   k.appendChild(el('div', 'kpi', `<div class="k">Peso corporal</div><div class="v">${bw ? nf(bw.kg) : '—'}<small>${bw ? 'kg' : ''}</small></div>
     <div class="d">${bw && bwPrev ? (bw.kg - bwPrev.kg >= 0 ? '+' : '') + nf(bw.kg - bwPrev.kg) + ' kg' : 'sin registro'}</div>`));
   body.appendChild(k);
+  body.appendChild(logrosSection());
 
   const withData = Object.keys(EX).filter(id => allSets(id).length);
   if (!withData.length) {
