@@ -598,6 +598,27 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 .iachat-in { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--hair-soft); }
 .iachat-in .ia-in { flex: 1; min-height: 24px; max-height: 120px; }
 .iachat-send { width: 42px; height: 42px; flex: 0 0 auto; border-radius: 50%; background: var(--leather); color: #fff; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+.fab-ia.up { bottom: calc(142px + env(safe-area-inset-bottom)); }
+
+/* barra "entrenamiento en curso" */
+.nowbar {
+  position: fixed; left: 12px; right: 12px; z-index: 44;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  max-width: 700px; margin: 0 auto;
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 14px; border-radius: 14px; text-align: left;
+  background: var(--panel-2); border: 1px solid var(--hair); box-shadow: var(--shadow);
+}
+.nowbar-dot { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; background: var(--leather); animation: nb-pulse 1.6s ease-in-out infinite; }
+@keyframes nb-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.6); } }
+.nowbar-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.nowbar-txt b { font-size: 14px; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nowbar-sub { font-family: var(--f-mono); font-size: 10px; color: var(--chalk-mute); text-transform: uppercase; letter-spacing: .08em; }
+.nowbar-t { font-family: var(--f-num); font-size: 15px; font-weight: 650; font-variant-numeric: tabular-nums; color: var(--chalk); flex: 0 0 auto; }
+.nowbar-go { font-size: 12.5px; font-weight: 650; color: var(--leather); flex: 0 0 auto; }
+
+.sess-dur { display: flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: 12px; color: var(--chalk-mute); }
+#sess-timer { font-family: var(--f-num); font-size: 15px; font-weight: 650; color: var(--chalk); font-variant-numeric: tabular-nums; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
@@ -628,6 +649,13 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
     </span>
   </div>
 </div>
+
+<button class="nowbar" id="nowbar" hidden>
+  <span class="nowbar-dot"></span>
+  <span class="nowbar-txt"><b id="nowbar-title"></b><span id="nowbar-sub">Entrenamiento en curso</span></span>
+  <span class="nowbar-t" id="nowbar-t">0:00</span>
+  <span class="nowbar-go">Continuar ›</span>
+</button>
 
 <button class="fab-ia" id="fab-ia" aria-label="Entrenador IA">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.5L3 21l2-5.6A8.5 8.5 0 1 1 21 11.5z"/><circle cx="8.5" cy="11.5" r="1"/><circle cx="12" cy="11.5" r="1"/><circle cx="15.5" cy="11.5" r="1"/></svg>
@@ -1953,6 +1981,7 @@ function render() {
   const old = $('main.screen');
   if (old) old.replaceWith(s); else app().insertBefore(s, $('.tabbar'));
   paintTabs(v.n);
+  paintNowbar();
   mountCanvases(s);
   mountMuscle(s);
   window.scrollTo(0, 0);
@@ -2153,6 +2182,35 @@ function startWorkout() {
   if (!S.active) newSession();
   stack = [{ n: 'hoy' }, { n: 'sesion' }];
   render();
+}
+
+/* Duración legible a partir de milisegundos. */
+function fmtDur(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}` : `${m}:${String(ss).padStart(2, '0')}`;
+}
+
+/* Barra "entrenamiento en curso": visible con sesión activa fuera de la propia sesión. */
+function paintNowbar() {
+  const bar = $('#nowbar');
+  if (!bar) return;
+  const n = here().n;
+  const show = !!S.active && n !== 'sesion' && n !== 'resumen';
+  bar.hidden = !show;
+  const fab = $('#fab-ia'); if (fab) fab.classList.toggle('up', show);
+  if (show) {
+    $('#nowbar-title').textContent = DAYS[S.active.kind].title;
+    $('#nowbar-t').textContent = fmtDur(Date.now() - (S.active.started || Date.now()));
+  }
+}
+
+/* Tic de un segundo: actualiza el cronómetro de la barra y el de la sesión. */
+function tickNow() {
+  if (!S.active) { const b = $('#nowbar'); if (b && !b.hidden) b.hidden = true; return; }
+  const elapsed = Date.now() - (S.active.started || Date.now());
+  const nb = $('#nowbar-t'); if (nb && !$('#nowbar').hidden) nb.textContent = fmtDur(elapsed);
+  const st = $('#sess-timer'); if (st) st.textContent = fmtDur(elapsed);
 }
 
 /* ---------- INICIO · historial de sesiones ---------- */
@@ -2408,6 +2466,9 @@ function vSesion(s) {
   header(s, `Semana ${a.week} · Día ${a.slot}`, d.title, d.subtitle, true);
 
   const body = el('div', 'stack-lg');
+  const dur = el('div', 'sess-dur');
+  dur.innerHTML = `<span class="nowbar-dot"></span>En curso · <span id="sess-timer">${fmtDur(Date.now() - (a.started || Date.now()))}</span>`;
+  body.appendChild(dur);
   const list = el('div', 'stack');
   d.items.forEach(it => list.appendChild(exRow(it, a)));
   body.appendChild(list);
@@ -3332,6 +3393,8 @@ function boot() {
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { applyTheme(); SPOT.repintar(); });
   $('#rest-skip').onclick = stopRest;
   $('#fab-ia').onclick = openIAChat;
+  $('#nowbar').onclick = () => { if (S.active) { stack = [{ n: 'hoy' }, { n: 'sesion' }]; render(); } };
+  setInterval(tickNow, 1000);
   $('#rest-add').onclick = () => { R.endAt += 30000; R.total = Math.max(R.total, restante()); paintRest(); };
   if (S.active) stack = [{ n: 'hoy' }];
   render();
