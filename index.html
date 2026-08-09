@@ -329,6 +329,19 @@ button { background: none; border: 0; padding: 0; cursor: pointer; }
 .setrow.done .tick { background: var(--leather); border-color: var(--leather); color: #FFFFFF; }
 .setrow.done .fld input { color: var(--chalk); border-color: color-mix(in srgb, var(--leather) 38%, transparent); }
 
+/* registro de series pro: nota, calentamiento, RPE, +/- */
+.exnote {
+  width: 100%; background: var(--panel-2); border: 1px solid var(--hair);
+  border-radius: 11px; padding: 10px 12px; font: inherit; font-size: 14px;
+  color: var(--chalk); margin-bottom: 10px; display: block;
+}
+.exnote::placeholder { color: var(--chalk-mute); }
+.setrow .n { font-family: var(--f-mono); font-size: 12px; color: var(--chalk-mute); text-align: center; }
+.setrow.warm .n { color: var(--rim); font-weight: 700; }
+.setrow.warm .fld input { border-style: dashed; color: var(--chalk-dim); font-size: 16px; }
+.setctr { display: flex; gap: 8px; margin-top: 9px; }
+.setctr .btn { flex: 1; }
+
 .hint {
   font-family: var(--f-mono); font-size: 11px; color: var(--chalk-mute);
   display: flex; justify-content: space-between; gap: 10px;
@@ -1982,7 +1995,7 @@ function paintRest() {
 function lastEntry(exId, beforeActive = true) {
   for (let i = S.log.length - 1; i >= 0; i--) {
     const s = S.log[i].sets[exId];
-    if (s && s.some(x => x.done)) return { sets: s.filter(x => x.done), date: S.log[i].date };
+    if (s && s.some(x => x.done && !x.warm)) return { sets: s.filter(x => x.done && !x.warm), date: S.log[i].date };
   }
   return null;
 }
@@ -1990,7 +2003,7 @@ function allSets(exId) {
   const out = [];
   for (const ses of S.log) {
     const s = ses.sets[exId];
-    if (s) { const d = s.filter(x => x.done); if (d.length) out.push({ date: ses.date, sets: d }); }
+    if (s) { const d = s.filter(x => x.done && !x.warm); if (d.length) out.push({ date: ses.date, sets: d }); }
   }
   return out;
 }
@@ -2000,7 +2013,7 @@ const bestOf = sets => sets.reduce((b, x) => {
   return !b || score > b.score ? { w, r, score } : b;
 }, null);
 const e1rm = (w, r) => (w > 0 && r > 0) ? Math.round(w * (1 + r / 30)) : 0;
-const volume = sets => sets.reduce((v, x) => v + (x.w || 0) * (x.r || 0), 0);
+const volume = sets => sets.reduce((v, x) => v + (x.warm ? 0 : (x.w || 0) * (x.r || 0)), 0);
 
 function prOf(exId) {
   const hist = allSets(exId); if (!hist.length) return null;
@@ -2087,13 +2100,13 @@ function sessionRecords(i) {
   const ses = S.log[i];
   let count = 0;
   for (const exId in ses.sets) {
-    const done = ses.sets[exId].filter(x => x.done);
+    const done = ses.sets[exId].filter(x => x.done && !x.warm);
     if (!done.length) continue;
     const sb = Math.max(...done.map(setScore));
     let prev = 0;
     for (let j = 0; j < i; j++) {
       const s2 = S.log[j].sets[exId];
-      if (s2) s2.filter(x => x.done).forEach(x => { const s = setScore(x); if (s > prev) prev = s; });
+      if (s2) s2.filter(x => x.done && !x.warm).forEach(x => { const s = setScore(x); if (s > prev) prev = s; });
     }
     if (sb > 0 && sb > prev) count++;
   }
@@ -2364,7 +2377,7 @@ function vInicio(s) {
     const a = S.log[i];
     const d = DAYS[a.kind];
     const vol = Object.entries(a.sets).reduce((acc, [id, arr]) => acc + volume(arr) * (EX[id] && EX[id].perSide ? 2 : 1), 0);
-    const done = Object.values(a.sets).flat().filter(x => x.done).length;
+    const done = Object.values(a.sets).flat().filter(x => x.done && !x.warm).length;
     const recs = sessionRecords(i);
     const thumbs = d.items.slice(0, 4).map(it => `<span class="feed-th">${mediaThumb(it.ex, 1.3)}</span>`).join('');
     const card = el('div', 'card feed');
@@ -2565,7 +2578,7 @@ function vHoy(s) {
 function exRow(it, sess) {
   const e = EX[it.ex];
   const r = el('button', 'exrow');
-  const done = sess ? (sess.sets[it.ex] || []).filter(x => x.done).length : 0;
+  const done = sess ? (sess.sets[it.ex] || []).filter(x => x.done && !x.warm).length : 0;
   if (done >= it.sets) r.classList.add('done');
   r.innerHTML = `
     <span class="thumb">${mediaThumb(it.ex, 1.24)}</span>
@@ -2605,7 +2618,7 @@ function vSesion(s) {
   body.appendChild(list);
 
   const total = d.items.reduce((n, i) => n + i.sets, 0);
-  const done = Object.values(a.sets).flat().filter(x => x.done).length;
+  const done = Object.values(a.sets).flat().filter(x => x.done && !x.warm).length;
 
   const foot = el('section', 'stack');
   foot.innerHTML = `<p class="hint"><span>Series cerradas</span><b>${done} de ${total}</b></p>`;
@@ -2647,7 +2660,7 @@ function vResumen(s, v) {
   header(s, '¡Sesión guardada!', d.title, 'Buen trabajo. Esto es lo que has movido hoy.');
   const body = el('div', 'stack-lg');
 
-  const done = Object.values(a.sets).flat().filter(x => x.done).length;
+  const done = Object.values(a.sets).flat().filter(x => x.done && !x.warm).length;
   const vol = Object.entries(a.sets).reduce((acc, [id, arr]) => acc + volume(arr) * (EX[id] && EX[id].perSide ? 2 : 1), 0);
   const recs = sessionRecords(v.logIdx);
   const kcss = 'font-family:var(--f-mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--chalk-mute)';
@@ -2658,7 +2671,7 @@ function vResumen(s, v) {
     <div><div style="${kcss}">Récords</div><div style="${vcss}">${recs ? '🥇 ' + recs : '—'}</div></div>
   </div>`));
 
-  const items = Object.keys(a.sets).map(ex => ({ ex, sets: a.sets[ex].filter(x => x.done).length }));
+  const items = Object.keys(a.sets).map(ex => ({ ex, sets: a.sets[ex].filter(x => x.done && !x.warm).length }));
   const counts = groupCounts(items);
   if (Object.keys(counts).length) {
     const ms = el('section');
@@ -2777,45 +2790,84 @@ function fmtSet(x, log) {
 }
 
 function setsEditor(exId, it, e) {
-  const wrap = el('div', 'sets');
-  const arr = S.active.sets[exId];
+  const a = S.active;
+  a.notes = a.notes || {};
+  const arr = a.sets[exId];
   const flds = FIELDS[e.log];
+  const hasRPE = e.log === 'weight' || e.log === 'bw';
+  const box = el('div');
 
-  arr.forEach((set, i) => {
-    const row = el('div', 'setrow' + (set.done ? ' done' : ''));
-    row.style.gridTemplateColumns = flds.length === 1 ? '30px 1fr 46px' : '30px 1fr 1fr 46px';
-    row.appendChild(el('span', 'n', String(i + 1)));
-    flds.forEach(f => {
-      const fd = el('span', 'fld');
-      fd.innerHTML = `<label>${f.l}</label><input inputmode="decimal" enterkeyhint="next" placeholder="${f.ph}" value="${set[f.k] ?? ''}">`;
-      const inp = fd.querySelector('input');
-      inp.oninput = () => { set[f.k] = num(inp.value); save(); };
-      wrap.appendChild ? null : null;
-      row.appendChild(fd);
+  /* Nota del ejercicio */
+  const note = el('input', 'exnote');
+  note.placeholder = 'Nota del ejercicio…';
+  note.value = a.notes[exId] || '';
+  note.oninput = () => { a.notes[exId] = note.value; save(); };
+  box.appendChild(note);
+
+  const wrap = el('div', 'sets');
+  box.appendChild(wrap);
+
+  const cols = () => flds.length === 1 ? '26px 1fr 44px'
+    : (hasRPE ? '24px 1fr 1fr 40px 44px' : '26px 1fr 1fr 44px');
+  /* Nº de serie de trabajo (los calentamientos no numeran). */
+  const numSerie = i => { let n = 0; for (let j = 0; j <= i; j++) if (!arr[j].warm) n++; return n; };
+
+  function draw() {
+    wrap.innerHTML = '';
+    arr.forEach((set, i) => {
+      const row = el('div', 'setrow' + (set.done ? ' done' : '') + (set.warm ? ' warm' : ''));
+      row.style.gridTemplateColumns = cols();
+      const n = el('button', 'n', set.warm ? 'W' : String(numSerie(i)));
+      n.title = 'Toca: serie de calentamiento (no cuenta al volumen)';
+      n.onclick = () => { set.warm = !set.warm; save(); draw(); };
+      row.appendChild(n);
+      flds.forEach(f => {
+        const fd = el('span', 'fld');
+        fd.innerHTML = `<label>${f.l}</label><input inputmode="decimal" enterkeyhint="next" placeholder="${f.ph}" value="${set[f.k] ?? ''}">`;
+        const inp = fd.querySelector('input');
+        inp.oninput = () => { set[f.k] = num(inp.value); save(); };
+        row.appendChild(fd);
+      });
+      if (hasRPE) {
+        const fd = el('span', 'fld');
+        fd.innerHTML = `<label>RPE</label><input inputmode="numeric" placeholder="–" maxlength="2" value="${set.rpe ?? ''}">`;
+        const inp = fd.querySelector('input');
+        inp.oninput = () => { const v = num(inp.value); set.rpe = (v != null && v >= 1 && v <= 10) ? v : null; save(); };
+        row.appendChild(fd);
+      }
+      const t = el('button', 'tick');
+      t.setAttribute('aria-label', set.done ? 'Deshacer serie' : 'Cerrar serie');
+      t.innerHTML = `<svg viewBox="0 0 24 24"><path d="M4 12.5l5.2 5.2L20 7"/></svg>`;
+      t.onclick = () => {
+        if (!set.done) {
+          const need = flds.find(f => set[f.k] == null && f.k === 'r');
+          if (need) { toast('Anota las repeticiones antes de cerrar la serie.'); return; }
+          set.done = true; save();
+          startRest(restFor(it));
+          if (!set.warm) {
+            let best = 0; const pb = prOf(exId); if (pb) best = pb.score;
+            arr.forEach(x => { if (x.done && !x.warm && x !== set) { const sx = setScore(x); if (sx > best) best = sx; } });
+            if (setScore(set) > 0 && setScore(set) > best) { celebratePR(); toast('¡Récord! 🥇 ' + e.tag); }
+            else if (arr.every(x => x.done)) toast('Ejercicio completo.');
+          }
+        } else { set.done = false; save(); }
+        draw();
+      };
+      row.appendChild(t);
+      wrap.appendChild(row);
     });
-    const t = el('button', 'tick');
-    t.setAttribute('aria-label', set.done ? 'Deshacer serie' : 'Cerrar serie');
-    t.innerHTML = `<svg viewBox="0 0 24 24"><path d="M4 12.5l5.2 5.2L20 7"/></svg>`;
-    t.onclick = () => {
-      if (!set.done) {
-        const need = flds.find(f => set[f.k] == null && f.k === 'r');
-        if (need) { toast('Anota las repeticiones antes de cerrar la serie.'); return; }
-        set.done = true; save();
-        row.classList.add('done');
-        startRest(restFor(it));
-        /* ¿récord? el mejor histórico más lo ya cerrado hoy, sin contar esta serie. */
-        let best = 0; const pb = prOf(exId); if (pb) best = pb.score;
-        arr.forEach(x => { if (x.done && x !== set) { const sx = setScore(x); if (sx > best) best = sx; } });
-        if (setScore(set) > 0 && setScore(set) > best) { row.classList.add('pr'); celebratePR(); toast('¡Récord! 🥇 ' + e.tag); }
-        else if (arr.every(x => x.done)) toast('Ejercicio completo.');
-      } else { set.done = false; save(); row.classList.remove('done'); }
-      refreshTick();
-    };
-    row.appendChild(t);
-    wrap.appendChild(row);
-  });
-  function refreshTick() { }
-  return wrap;
+  }
+  draw();
+
+  const ctr = el('div', 'setctr');
+  const minus = el('button', 'btn btn-ghost btn-sm', '− Serie');
+  minus.onclick = () => { if (arr.length > 1) { arr.pop(); save(); draw(); } };
+  const plus = el('button', 'btn btn-ghost btn-sm', '+ Serie');
+  plus.onclick = () => { const last = arr[arr.length - 1]; arr.push({ w: last ? last.w : null, r: null, done: false }); save(); draw(); };
+  ctr.append(minus, plus);
+  box.appendChild(ctr);
+
+  return box;
 }
 
 /* ---------- PLAN ---------- */
