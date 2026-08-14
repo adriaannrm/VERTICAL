@@ -3336,7 +3336,7 @@ function applyTheme() {
   else r.setAttribute('data-theme', S.theme);
   const dark = S.theme === 'dark' || (S.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
   const m = $('meta[name="theme-color"]');
-  if (m) m.setAttribute('content', dark ? '#131110' : '#F0E3CB');
+  if (m) m.setAttribute('content', dark ? '#0B0B0D' : '#F4F5F8');
 }
 
 /* Deja la cabecera lista para "Añadir a pantalla de inicio", venga de donde venga
@@ -3353,7 +3353,7 @@ function installMeta() {
   set('meta[name="mobile-web-app-capable"]', 'meta', { name: 'mobile-web-app-capable', content: 'yes' });
   set('meta[name="apple-mobile-web-app-status-bar-style"]', 'meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' });
   set('meta[name="apple-mobile-web-app-title"]', 'meta', { name: 'apple-mobile-web-app-title', content: 'VERTICAL' });
-  set('meta[name="theme-color"]', 'meta', { name: 'theme-color', content: '#131110' });
+  set('meta[name="theme-color"]', 'meta', { name: 'theme-color', content: '#0B0B0D' });
   if (window.VERTICAL_ICON) {
     set('link[rel="apple-touch-icon"]', 'link', { rel: 'apple-touch-icon', href: window.VERTICAL_ICON });
     set('link[rel="icon"]', 'link', { rel: 'icon', type: 'image/png', href: window.VERTICAL_ICON });

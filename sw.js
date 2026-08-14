@@ -4,7 +4,7 @@
 
    Para forzar una actualización tras cambiar la app, sube CACHE una versión. */
 
-const CACHE = 'vertical-v30';
+const CACHE = 'vertical-v31';
 
 /* Peticion que salta la cache HTTP del navegador.
    GitHub Pages sirve con 10 min de cache, asi que sin esto el refresco pedia el
